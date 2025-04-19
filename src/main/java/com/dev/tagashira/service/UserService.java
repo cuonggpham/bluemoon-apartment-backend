@@ -50,8 +50,11 @@ public class UserService {
     //Logic delete user by id
     public void deleteUser(long id) throws UserInfoException {
         User currentUser = this.fetchUserById(id);
-        currentUser.setIsActive(0);
-        this.userRepository.save(currentUser);
+        if(currentUser != null) {
+            currentUser.setIsActive(0);
+            this.userRepository.save(currentUser);
+        }
+        else throw new UserInfoException("User with id " + id + " is not found");
     }
 
     //Logic update user
@@ -64,6 +67,7 @@ public class UserService {
             // update
             currentUser = this.userRepository.save(currentUser);
         }
+        else throw new UserInfoException("User with id " + reqUser.getId() + " is not found");
         return currentUser;
     }
 
@@ -107,6 +111,8 @@ public class UserService {
         return this.userRepository.findByRefreshTokenAndEmail(token, email);
     }
 
-    public UserResponse UserToUserResponse(User user) { return this.userMapper.toUserResponse(user);}
+    public UserResponse UserToUserResponse(User user) {
+        return this.userMapper.toUserResponse(user);
+    }
 
 }
