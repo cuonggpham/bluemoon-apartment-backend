@@ -18,7 +18,6 @@ import com.dev.tagashira.constant.PaymentEnum;
      @Id
      Long id;
  
- 
      @ManyToOne
      @JoinColumn(name = "apartment_id")
      Apartment apartment;
