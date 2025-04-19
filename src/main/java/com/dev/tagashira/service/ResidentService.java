@@ -3,6 +3,7 @@ package com.dev.tagashira.service;
 import com.dev.tagashira.dto.request.ResidentCreateRequest;
  import com.dev.tagashira.dto.response.PaginatedResponse;
  import com.dev.tagashira.dto.response.UserResponse;
+ import com.dev.tagashira.entity.Apartment;
  import com.dev.tagashira.entity.Resident;
  import com.dev.tagashira.entity.User;
  import com.dev.tagashira.repository.ResidentRepository;
@@ -40,7 +41,7 @@ import com.dev.tagashira.dto.request.ResidentCreateRequest;
          resident1.setName(resident.getName());
          resident1.setDob(resident.getDob());
          resident1.setStatus(resident.getStatus());
-         resident1.setAddressNumber(resident.getAddressNumber());
+         resident1.setApartment(new Apartment());
          return this.residentRepository.save(resident1);
      }
  
@@ -48,7 +49,7 @@ import com.dev.tagashira.dto.request.ResidentCreateRequest;
          Resident oldResident = this.fetchResidentById(resident.getId());
          if(oldResident!=null){
              if(resident.getName()!=null) oldResident.setName(resident.getName());
-             if(resident.getAddressNumber()!=null) oldResident.setAddressNumber(resident.getAddressNumber());
+             if(resident.getApartment().getAddressNumber()!=null) oldResident.getApartment().setAddressNumber(resident.getApartment().getAddressNumber());
              if(resident.getDob()!=null) oldResident.setDob(resident.getDob());
              if(resident.getStatus()!=null) oldResident.setStatus(resident.getStatus());
          }

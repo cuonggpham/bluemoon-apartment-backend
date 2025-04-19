@@ -111,6 +111,8 @@ public class UserService {
         return this.userRepository.findByRefreshTokenAndEmail(token, email);
     }
 
-    public UserResponse UserToUserResponse(User user) { return this.userMapper.toUserResponse(user);}
+    public UserResponse UserToUserResponse(User user) {
+        return this.userMapper.toUserResponse(user);
+    }
 
 }
