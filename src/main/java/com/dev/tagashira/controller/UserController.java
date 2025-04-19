@@ -1,6 +1,7 @@
 package com.dev.tagashira.controller;
 
 import com.dev.tagashira.dto.request.UserCreateRequest;
+import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.UserResponse;
 import com.dev.tagashira.exception.UserInfoException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,11 +52,10 @@ public class UserController {
 
     //Delete user by id
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable("id") long id) throws Exception {
-        this.userService.deleteUser(id);
-        return ResponseEntity.ok("deleted successfully");
+    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable("id") long id) throws Exception {
+        ApiResponse<String> response = this.userService.deleteUser(id);
+        return ResponseEntity.ok(response);
     }
-
     //Update user
     @PutMapping()
     public ResponseEntity<User> updateUser(@RequestBody User user) throws Exception {

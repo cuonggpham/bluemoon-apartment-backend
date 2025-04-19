@@ -1,6 +1,7 @@
 package com.dev.tagashira.controller;
 
 import com.dev.tagashira.dto.request.ResidentCreateRequest;
+import com.dev.tagashira.dto.response.ApiResponse;
  import com.dev.tagashira.dto.response.PaginatedResponse;
  import com.dev.tagashira.entity.Resident;
  import com.dev.tagashira.service.ResidentService;
@@ -43,11 +44,11 @@ import com.dev.tagashira.dto.request.ResidentCreateRequest;
      }
  
      //Delete resident by id
-     @DeleteMapping("/{id}")
-     public ResponseEntity<String> deleteResident(@PathVariable("id") long id) throws Exception {
-         this.residentService.deleteResident(id);
-         return ResponseEntity.ok("deleted resident successfully");
-     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteResident(@PathVariable("id") long id) throws Exception {
+        ApiResponse<String> response = this.residentService.deleteResident(id);
+        return ResponseEntity.ok(response);
+    }
  
      //Update resident
      @PutMapping()

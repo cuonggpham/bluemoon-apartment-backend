@@ -1,12 +1,14 @@
 package com.dev.tagashira.service;
 
 import com.dev.tagashira.dto.request.UserCreateRequest;
+import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.UserResponse;
 import com.dev.tagashira.entity.User;
 import com.dev.tagashira.exception.UserInfoException;  
 import com.dev.tagashira.mapper.UserMapper;
 import com.dev.tagashira.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,13 +50,18 @@ public class UserService {
     }
 
     //Logic delete user by id
-    public void deleteUser(long id) throws UserInfoException {
+    public ApiResponse<String> deleteUser(long id) throws UserInfoException {
         User currentUser = this.fetchUserById(id);
         if(currentUser != null) {
             currentUser.setIsActive(0);
             this.userRepository.save(currentUser);
         }
         else throw new UserInfoException("User with id " + id + " is not found");
+        ApiResponse<String> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("delete user success");
+        response.setData(null);
+        return response;
     }
 
     //Logic update user
