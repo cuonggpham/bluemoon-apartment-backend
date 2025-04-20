@@ -1,6 +1,7 @@
 package com.dev.tagashira.service;
 
 import com.dev.tagashira.dto.request.ResidentCreateRequest;
+import com.dev.tagashira.dto.response.ApiResponse;
  import com.dev.tagashira.dto.response.PaginatedResponse;
  import com.dev.tagashira.dto.response.UserResponse;
  import com.dev.tagashira.entity.Apartment;
@@ -12,6 +13,7 @@ import com.dev.tagashira.dto.request.ResidentCreateRequest;
  import org.springframework.data.domain.Page;
  import org.springframework.data.domain.Pageable;
  import org.springframework.data.jpa.domain.Specification;
+ import org.springframework.http.HttpStatus;
  import org.springframework.stereotype.Service;
  
  import java.util.List;
@@ -57,12 +59,17 @@ import com.dev.tagashira.dto.request.ResidentCreateRequest;
          return this.residentRepository.save(oldResident);
      }
  
-     public void deleteResident(Long id) throws Exception {
+    public ApiResponse<String> deleteResident(Long id) throws Exception {
          Resident resident = this.fetchResidentById(id);
          if(resident!=null){
              this.residentRepository.delete(resident);
          }
          else throw new Exception("Resident with id = "+id+" is not found");
-     }
+        ApiResponse<String> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("delete resident success");
+        response.setData(null);
+        return response;
+    }
  
  }
