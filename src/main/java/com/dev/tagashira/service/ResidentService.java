@@ -8,6 +8,7 @@ import com.dev.tagashira.dto.response.UserResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.entity.User;
+import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.ResidentRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.crossstore.ChangeSetPersister;
@@ -36,7 +37,7 @@ public class ResidentService {
     }
 
     public Resident fetchResidentById(Long id) throws Exception {
-        return this.residentRepository.findById(id).orElseThrow(()-> new Exception("Resident with id = "+id+ " is not found"));
+        return this.residentRepository.findById(id).orElseThrow(()-> new UserInfoException("Resident with id = "+id+ " is not found"));
     }
 
     public Resident createResident(ResidentCreateRequest resident) throws Exception {
@@ -51,22 +52,16 @@ public class ResidentService {
 
     public Resident updateResident(Resident resident) throws Exception {
         Resident oldResident = this.fetchResidentById(resident.getId());
-        if(oldResident!=null){
-            if(resident.getName()!=null) oldResident.setName(resident.getName());
-            if(resident.getAddressNumber()!=null) oldResident.setAddressNumber(resident.getAddressNumber());
-            if(resident.getDob()!=null) oldResident.setDob(resident.getDob());
-            if(resident.getStatus()!=null) oldResident.setStatus(resident.getStatus());
-        }
-        else throw new Exception("Resident with id = "+resident.getId()+" is not found");
+        if(resident.getName()!=null) oldResident.setName(resident.getName());
+        if(resident.getAddressNumber()!=null) oldResident.setAddressNumber(resident.getAddressNumber());
+        if(resident.getDob()!=null) oldResident.setDob(resident.getDob());
+        if(resident.getStatus()!=null) oldResident.setStatus(resident.getStatus());
         return this.residentRepository.save(oldResident);
     }
 
     public ApiResponse<String> deleteResident(Long id) throws Exception {
         Resident resident = this.fetchResidentById(id);
-        if(resident!=null){
-            this.residentRepository.delete(resident);
-        }
-        else throw new Exception("Resident with id = "+id+" is not found");
+        this.residentRepository.delete(resident);
         ApiResponse<String> response = new ApiResponse<>();
         response.setCode(HttpStatus.OK.value());
         response.setMessage("delete resident success");
