@@ -35,6 +35,7 @@ public class SecurityConfig {
 
                 .formLogin(f -> f.disable())
 
+                
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )

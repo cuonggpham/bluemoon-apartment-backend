@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import java.time.Instant;
 import java.util.List;
 
+
 @Entity
 @Table(name = "apartments")
 @Getter
