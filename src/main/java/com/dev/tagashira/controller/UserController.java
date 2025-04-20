@@ -56,6 +56,7 @@ public class UserController {
         ApiResponse<String> response = this.userService.deleteUser(id);
         return ResponseEntity.ok(response);
     }
+    
     //Update user
     @PutMapping()
     public ResponseEntity<User> updateUser(@RequestBody User user) throws Exception {
