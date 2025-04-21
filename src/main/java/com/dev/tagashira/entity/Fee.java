@@ -2,7 +2,6 @@ package com.dev.tagashira.entity;
  
  import com.fasterxml.jackson.annotation.JsonIgnore;
  import com.dev.tagashira.constant.FeeTypeEnum;
- import com.dev.tagashira.constant.PaymentEnum;
  import com.dev.tagashira.service.SecurityUtil;
  import jakarta.persistence.*;
  import lombok.*;
@@ -11,37 +10,41 @@ package com.dev.tagashira.entity;
  import java.math.BigDecimal;
  import java.time.Instant;
  import java.time.LocalDate;
- import java.time.ZoneId;
  import java.util.List;
+ import java.util.Optional;
+ 
+ import static jakarta.persistence.FetchType.LAZY;
  
  @Entity
- @Table(name = "invoices")
+ @Table(name = "fees")
  @Getter
  @Setter
- @AllArgsConstructor
- @NoArgsConstructor
  @FieldDefaults(level = AccessLevel.PRIVATE)
- public class Invoice {
+ public class Fee {
      @Id
-     String id;
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+     Long id;
      String name;
      @Column(columnDefinition = "MEDIUMTEXT")
-     String description;
+     private String description;
+     @Enumerated(EnumType.STRING)
+     FeeTypeEnum feeTypeEnum;
+     BigDecimal unitPrice;
  
      @JsonIgnore  //hide this field
-     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)  //cascade: used for auto updating at fees and invoices table
+     @OneToMany(mappedBy = "fee", cascade = CascadeType.ALL) //cascade: used for auto updating at fees and invoices table
      List<FeeInvoice> feeInvoices;
  
+     Instant createdAt;
      Instant updatedAt;
  
      @PrePersist
      public void beforeCreate() {
-         this.updatedAt = Instant.now();
+         this.createdAt = Instant.now();
      }
- 
      @PreUpdate
      public void beforeUpdate() {
+ 
          this.updatedAt = Instant.now();
      }
- 
  }
