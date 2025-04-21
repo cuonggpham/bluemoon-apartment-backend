@@ -1,5 +1,6 @@
 package com.dev.tagashira.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.dev.tagashira.constant.ApartmentEnum;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 /**
  * Entity class representing an apartment.
