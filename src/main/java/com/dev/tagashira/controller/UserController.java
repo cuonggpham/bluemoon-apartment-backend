@@ -45,8 +45,8 @@ public class UserController {
 
     //Create new user
     @PostMapping("/register")
-    public ResponseEntity<User> createUser(@Valid @RequestBody UserCreateRequest userCreateRequest) throws Exception {
-        User user = new User();
+    public ResponseEntity<User> createNewUser(@Valid @RequestBody UserCreateRequest apiUser) throws Exception {
+        User user = this.userService.createUser(apiUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
@@ -56,7 +56,7 @@ public class UserController {
         ApiResponse<String> response = this.userService.deleteUser(id);
         return ResponseEntity.ok(response);
     }
-    
+
     //Update user
     @PutMapping()
     public ResponseEntity<User> updateUser(@RequestBody User user) throws Exception {

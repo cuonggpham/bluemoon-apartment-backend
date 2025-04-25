@@ -1,10 +1,11 @@
 package com.dev.tagashira.service;
 
+
 import com.dev.tagashira.dto.request.UserCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.UserResponse;
 import com.dev.tagashira.entity.User;
-import com.dev.tagashira.exception.UserInfoException;  
+import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.mapper.UserMapper;
 import com.dev.tagashira.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,6 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-
     private PasswordEncoder passwordEncoder;
 
     //Logic fetch all user
@@ -70,19 +70,18 @@ public class UserService {
         if (currentUser != null) {
             currentUser.setEmail(reqUser.getEmail());
             currentUser.setName(reqUser.getName());
-            currentUser.setPassword(reqUser.getPassword());
+            String hashPassword = this.passwordEncoder.encode(reqUser.getPassword());
+            currentUser.setPassword(hashPassword);
             // update
             currentUser = this.userRepository.save(currentUser);
         }
         else throw new UserInfoException("User with id " + reqUser.getId() + " is not found");
         return currentUser;
     }
-
     //Check existed email
     public boolean isEmailExist(String email) {
         return this.userRepository.findByEmail(email) != null;
     }
-
     //Logic create user
     public User createUser(UserCreateRequest userCreateRequest) throws UserInfoException {
         if (isEmailExist(userCreateRequest.getUsername())) {
@@ -95,17 +94,15 @@ public class UserService {
             existingUser.setIsActive(1);
             return this.userRepository.save(existingUser);
         }
-
         // If email is not found, create a new user
         User user = new User();
         user.setName(userCreateRequest.getName());
         String hashPassword = this.passwordEncoder.encode(userCreateRequest.getPassword());
         user.setPassword(hashPassword);
         user.setEmail(userCreateRequest.getUsername());
+        user.setAuthType("normal");
         return this.userRepository.save(user);
     }
-
-
     public void updateUserToken(String token, String email) {
         User currentUser = this.getUserByUsername(email);
         if (currentUser != null) {
@@ -113,13 +110,10 @@ public class UserService {
             this.userRepository.save(currentUser);
         }
     }
-
     public User getUserByRefreshTokenAndEmail(String token, String email) {
         return this.userRepository.findByRefreshTokenAndEmail(token, email);
     }
-
     public UserResponse UserToUserResponse(User user) {
         return this.userMapper.toUserResponse(user);
     }
-
 }

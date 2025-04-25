@@ -5,7 +5,7 @@ import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.service.AuthService;
 import com.dev.tagashira.service.SecurityUtil;
 import com.dev.tagashira.dto.response.ResLoginDTO;
-import com.dev.tagashira.dto.request.UserLoginRequest;
+import com.dev.tagashira.dto.request.UserLoginDTO;
 import com.dev.tagashira.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +29,7 @@ public class  AuthController {
     private final UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<ResLoginDTO> login(@RequestBody UserLoginRequest loginDto) {
+    public ResponseEntity<ResLoginDTO> login(@RequestBody UserLoginDTO loginDto) {
         ResLoginDTO res = this.authService.getLogin(loginDto);
 
         // create refresh token

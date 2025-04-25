@@ -6,10 +6,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.dev.tagashira.dto.request.UserLoginRequest;
+import com.dev.tagashira.dto.request.UserLoginDTO;
 import com.dev.tagashira.dto.response.ResLoginDTO;
 import com.dev.tagashira.entity.User;
 import com.dev.tagashira.exception.UserInfoException;
+import com.dev.tagashira.repository.UserRepository;
 import com.nimbusds.jose.util.Base64;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,18 +31,19 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 
-
 @Service
 public class SecurityUtil {
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
     private final UserService userService;
+    private final UserRepository userRepository;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
 
-    public SecurityUtil(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder , UserService userService, AuthenticationManagerBuilder authenticationManagerBuilder) {
+    public SecurityUtil(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder, UserService userService, UserRepository userRepository, AuthenticationManagerBuilder authenticationManagerBuilder) {
         this.jwtEncoder = jwtEncoder;
         this.jwtDecoder = jwtDecoder;
         this.userService = userService;
+        this.userRepository = userRepository;
         this.authenticationManagerBuilder = authenticationManagerBuilder;
     }
 
@@ -120,7 +122,6 @@ public class SecurityUtil {
                 JWT_ALGORITHM.getName());
     }
 
-
     // refresh token
     public ResLoginDTO getRefreshedUser(String refresh_token) throws Exception{
         if (refresh_token.equals("abc")) {
@@ -137,15 +138,12 @@ public class SecurityUtil {
             }
             throw new UserInfoException("Refresh token is not valid");
         }
- 
         String email = decodedToken.getSubject();
-
         // check user by token + email
-        User currentUser = this.userService.getUserByRefreshTokenAndEmail(refresh_token, email);
+        User currentUser = this.userRepository.findByEmail(email);
         if (currentUser == null) {
             throw new UserInfoException("Refresh token is not valid");
         }
-
         // issue new token/set refresh token as cookies
         ResLoginDTO res = new ResLoginDTO();
         User currentUserDB = this.userService.getUserByUsername(email);
@@ -156,17 +154,13 @@ public class SecurityUtil {
                     currentUserDB.getName());
             res.setUser(userLogin);
         }
-
         // create access token
         String access_token = this.createAccessToken(email, res.getUser(), Collections.emptyList());//Authorization has not been loaded yet
         res.setAccessToken(access_token);
-
         // create refresh token
         String new_refresh_token = this.createRefreshToken(email, res);
-
         // update user
         this.userService.updateUserToken(new_refresh_token, email);
-
         return res;
     }
 
@@ -187,7 +181,6 @@ public class SecurityUtil {
         }
         return null;
     }
-
     // Get the JWT of the current user.
     public static Optional<String> getCurrentUserJWT() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
@@ -196,5 +189,5 @@ public class SecurityUtil {
                 .map(authentication -> (String) authentication.getCredentials());
     }
 
-
 }
+

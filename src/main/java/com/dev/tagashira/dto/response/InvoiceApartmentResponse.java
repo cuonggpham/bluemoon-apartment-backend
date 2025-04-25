@@ -1,9 +1,11 @@
 package com.dev.tagashira.dto.response;
 
+import com.dev.tagashira.constant.PaymentEnum;
 import com.dev.tagashira.entity.Fee;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,13 +15,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level= AccessLevel.PRIVATE)
-public class InvoiceResponse {
-    int isActive;
+public class InvoiceApartmentResponse {
     String id;
     String name;
     String description;
-    LocalDate lastUpdated;
-    List<Fee> feeList;
+    Instant updatedAt;
+    LocalDate createdAt;
+    PaymentEnum paymentStatus;
+    List<FeeResponse> feeList;
 }
-
-

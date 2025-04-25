@@ -12,6 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import java.util.Map;
 
+//https://chatgpt.com/c/671cfa55-d358-800e-8738-5e527bf6f672
 //Format the content of the response body before it is sent to the client
 @ControllerAdvice
 public class FormatApiResponse implements ResponseBodyAdvice<Object> {
@@ -60,13 +61,14 @@ public class FormatApiResponse implements ResponseBodyAdvice<Object> {
             res.setMessage(errorMessage);
             res.setData(null);
         } else {
-
+            // Success (status < 400)
             res.setData(body);
             res.setMessage("CALL API SUCCESS");
         }
 
-        
+
         return res;
     }
 
 }
+

@@ -1,8 +1,7 @@
 package com.dev.tagashira.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.dev.tagashira.constant.PaymentEnum;
+import com.dev.tagashira.constant.VehicleEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,34 +10,29 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "utility_bills")
+@Table(name = "vehicles")
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UtilityBill {
+public class Vehicle {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    String id;
 
-    double electricity;
-    double water;
-    double internet;
-
-    String name;
-    PaymentEnum paymentStatus;
+    VehicleEnum category;
 
     @ManyToOne()
+    @JoinColumn(name = "address_id")
     @JsonIgnore
     Apartment apartment;
 
-    LocalDate createdAt;
+    LocalDate registerDate;
 
     @PrePersist
     public void beforeCreate() {
-        this.createdAt = LocalDate.now();
+        this.registerDate = LocalDate.now();
     }
 
     @Transient
