@@ -1,5 +1,6 @@
 package com.dev.tagashira.dto.response;
 
+import com.dev.tagashira.constant.FeeTypeEnum;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -7,9 +8,11 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @FieldDefaults(level= AccessLevel.PRIVATE)
-public class UserResponse {
-    long id;
+public class FeeResponse {
     String name;
-    String email;
+    Long id;
+    FeeTypeEnum feeType;
+    double amount;
 }

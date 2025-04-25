@@ -2,14 +2,16 @@ package com.dev.tagashira.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
 @Setter
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserLoginRequest {
+@FieldDefaults(level= AccessLevel.PRIVATE)
+@Builder
+public class UserLoginDTO {
     @NotBlank(message = "username can't be blank")
     String username;
 

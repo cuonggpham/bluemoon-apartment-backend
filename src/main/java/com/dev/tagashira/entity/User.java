@@ -1,16 +1,17 @@
 package com.dev.tagashira.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level= AccessLevel.PRIVATE)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,14 +20,17 @@ public class User {
     String name;
     String email;
     String password;
+    String authType;
 
     @Column(columnDefinition = "MEDIUMTEXT")
     String refreshToken;
 
-    int isActive; 
+    String googleAccountId;
+
+    int isActive;
 
     @PrePersist
-    public void prePersist() {
-        this.isActive = 1; // Set default value for isActive to 1 (active) before persisting
+    protected void onCreate() {
+        this.isActive = 1;
     }
 }

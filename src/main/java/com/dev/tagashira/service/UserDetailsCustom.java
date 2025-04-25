@@ -33,10 +33,10 @@ public class UserDetailsCustom implements UserDetailsService {
                 throw new RuntimeException(e);
             }
         }
-
         return new User(
                 user.getEmail(),
                 user.getPassword(),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))); //hash code authority
     }
 }
+

@@ -2,13 +2,14 @@ package com.dev.tagashira.entity;
 
 import java.time.Instant;
 import java.time.LocalDate;
- 
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.dev.tagashira.constant.GenderEnum;
 import com.dev.tagashira.constant.ResidentEnum;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,8 +29,11 @@ public class Resident {
 
     String name;
 
-    LocalDate dob; 
+    LocalDate dob;
 
+    GenderEnum gender;
+
+    String cic;
 
     @ManyToOne()
     @JoinColumn(name = "addressNumber")
@@ -37,15 +41,8 @@ public class Resident {
     Apartment apartment;
     @Enumerated(EnumType.STRING)
     ResidentEnum status;
+    int isActive;
     LocalDate statusDate;
-
-    Instant createdAt;
-
-    @PrePersist
-    public void beforeCreate() {
-        this.createdAt = Instant.now();
-        this.statusDate = LocalDate.now();
-    }
 
     @Transient  // field used to compare with status, not saved into database
     ResidentEnum previousStatus;
@@ -53,14 +50,16 @@ public class Resident {
     @Transient
     Long apartmentId;
 
+    @PrePersist
+    public void beforePersist() {
+            isActive = 1;
+            statusDate = LocalDate.now();
+    }
+
     @PostLoad
     public void onLoad() {
         this.previousStatus = this.status;
-        if (this.apartment != null) {
-            this.apartmentId = this.apartment.getAddressNumber();  // set apartmentId to the addressNumber of the apartment
-        } else {
-            this.apartmentId = null;  // set apartmentId to null if apartment is null
-        }
+        this.apartmentId = apartment != null ? apartment.getAddressNumber() : null;
     }
 
     @PreUpdate
@@ -69,6 +68,9 @@ public class Resident {
             this.statusDate = LocalDate.now();  // update statusDate
         }
         this.previousStatus = this.status;
+        if (this.isActive == 0) {
+            this.status = ResidentEnum.Moved; // soft delete
+        }
     }
 
 }
