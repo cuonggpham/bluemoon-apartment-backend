@@ -17,6 +17,7 @@ import java.util.List;
 @Configuration
 public class OpenAPIConfig {
     //    http://localhost:8080/zen8labs-system/swagger-ui/index.html#/
+
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI().info(new Info().title("API doc")
