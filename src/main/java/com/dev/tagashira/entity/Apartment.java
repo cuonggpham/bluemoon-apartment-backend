@@ -8,10 +8,11 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.dev.tagashira.constant.VehicleEnum;
 
@@ -34,11 +35,16 @@ public class Apartment {
     ApartmentEnum status;
 
     Instant createdAt;
-    Instant updatedAt;
+    Instant updatedAt;    
 
-    @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "apartment_residents",
+        joinColumns = @JoinColumn(name = "apartment_id"),
+        inverseJoinColumns = @JoinColumn(name = "resident_id")
+    )
     @Builder.Default
-    private List<Resident> residentList = new ArrayList<>();
+    private Set<Resident> residentList = new HashSet<>();
 
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
     private List<Vehicle> vehicleList;

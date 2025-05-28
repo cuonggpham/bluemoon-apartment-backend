@@ -3,11 +3,13 @@ package com.dev.tagashira.service;
 import com.dev.tagashira.constant.ApartmentEnum;
 import com.dev.tagashira.constant.GenderEnum;
 import com.dev.tagashira.constant.ResidentEnum;
+import com.dev.tagashira.converter.ResidentConverter;
 import com.dev.tagashira.dto.request.ResidentCreateRequest;
 import com.dev.tagashira.dto.request.ResidentUpdateRequest;
 import com.dev.tagashira.dto.request.ResidentWithApartmentCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
+import com.dev.tagashira.dto.response.ResidentResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.repository.ApartmentRepository;
@@ -24,9 +26,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
-
-import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -35,8 +34,9 @@ import java.util.List;
 public class ResidentService {
     ResidentRepository residentRepository;
     ApartmentRepository apartmentRepository;
-
-    public PaginatedResponse<Resident> fetchAllResidents(Specification<Resident> spec, Pageable pageable) {
+    ResidentConverter residentConverter;    
+    
+    public PaginatedResponse<ResidentResponse> fetchAllResidents(Specification<Resident> spec, Pageable pageable) {
         //Page<Resident> pageResident = this.residentRepository.findAll(spec, pageable);
         Specification<Resident> notMovedSpec = (root, query, criteriaBuilder) ->
                 criteriaBuilder.notEqual(root.get("status"), ResidentEnum.Moved);
@@ -45,34 +45,41 @@ public class ResidentService {
 
         Page<Resident> pageResident = this.residentRepository.findAll(combinedSpec, pageable);
 
-        PaginatedResponse<Resident> page = new PaginatedResponse<>();
+        PaginatedResponse<ResidentResponse> page = new PaginatedResponse<>();
         page.setPageSize(pageable.getPageSize());
         page.setCurPage(pageable.getPageNumber());
         page.setTotalPages(pageResident.getTotalPages());
         page.setTotalElements(pageResident.getNumberOfElements());
-        page.setResult(pageResident.getContent());
+        page.setResult(residentConverter.toResponseList(pageResident.getContent()));
         return page;
-    }
-
-    public PaginatedResponse<Resident> fetchAll(Specification<Resident> spec, Pageable pageable) {
+    }    
+    
+    public PaginatedResponse<ResidentResponse> fetchAll(Specification<Resident> spec, Pageable pageable) {
         Page<Resident> pageResident = this.residentRepository.findAll(spec, pageable);
-        PaginatedResponse<Resident> page = new PaginatedResponse<>();
+        PaginatedResponse<ResidentResponse> page = new PaginatedResponse<>();
         page.setPageSize(pageable.getPageSize());
         page.setCurPage(pageable.getPageNumber());
         page.setTotalPages(pageResident.getTotalPages());
         page.setTotalElements(pageResident.getNumberOfElements());
-        page.setResult(pageResident.getContent());
+        page.setResult(residentConverter.toResponseList(pageResident.getContent()));
         return page;
-    }
-
-    @Transactional
-    public Resident fetchResidentById(Long id) throws RuntimeException {
-        return this.residentRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Resident with id = "+id+ " is not found"));
     }    
     
     @Transactional
-    public Resident createResident(ResidentCreateRequest residentCreate) throws RuntimeException {
+    public ResidentResponse fetchResidentById(Long id) throws RuntimeException {
+        Resident resident = this.residentRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("Resident with id = "+id+ " is not found"));
+        return residentConverter.toResponse(resident);
+    }
+
+    @Transactional
+    public Resident fetchResidentEntityById(Long id) throws RuntimeException {
+        return this.residentRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("Resident with id = "+id+ " is not found"));
+    }
+      
+    @Transactional
+    public ResidentResponse createResident(ResidentCreateRequest residentCreate) throws RuntimeException {
         if (this.residentRepository.findById(residentCreate.getId()).isPresent()) {
             throw new RuntimeException("Resident with id = " + residentCreate.getId() + " already exists");
         }
@@ -87,32 +94,24 @@ public class ResidentService {
                 .build();
         resident.setIsActive(1);
 
-        // Handle apartment assignment
+        Resident savedResident = this.residentRepository.save(resident);
+
+        // Handle apartment assignment using many-to-many relationship
         if (residentCreate.getApartmentId() != null) {
             Apartment apartment = apartmentRepository.findById(residentCreate.getApartmentId())
                     .orElseThrow(() -> new RuntimeException("Apartment with id " + residentCreate.getApartmentId() + " not found"));
-            resident.setApartment(apartment);
-        }
-
-        Resident savedResident = this.residentRepository.save(resident);
-        
-        // Update apartment's resident list if apartment is assigned
-        if (residentCreate.getApartmentId() != null) {
-            Apartment apartment = apartmentRepository.findById(residentCreate.getApartmentId()).get();
-            if (apartment.getResidentList() != null) {
-                apartment.getResidentList().add(savedResident);
-            } else {
-                apartment.setResidentList(List.of(savedResident));
-            }
+            
+            // Add resident to apartment's residentList set
+            apartment.getResidentList().add(savedResident);
             apartmentRepository.save(apartment);
         }
 
-        return savedResident;
-    }
-
+        return residentConverter.toResponse(savedResident);
+    }    
+    
     @Transactional
-    public Resident updateResident(ResidentUpdateRequest resident) throws Exception {
-        Resident oldResident = this.fetchResidentById(resident.getId());
+    public ResidentResponse updateResident(ResidentUpdateRequest resident) throws Exception {
+        Resident oldResident = this.fetchResidentEntityById(resident.getId());
         if (oldResident != null) {
             if (resident.getName() != null) oldResident.setName(resident.getName());
             if (resident.getDob() != null) oldResident.setDob(resident.getDob());
@@ -128,21 +127,21 @@ public class ResidentService {
             if (resident.getAddressNumber() != null) {
                 Apartment newApartment = apartmentRepository.findById(resident.getAddressNumber())
                         .orElseThrow(() -> new RuntimeException("Apartment with address number " + resident.getAddressNumber() + " not found"));
-                List<Resident> residentList = newApartment.getResidentList();
-                residentList.add(oldResident);
-                newApartment.setResidentList(residentList);
+                
+                // Add resident to apartment's residentList set using many-to-many
+                newApartment.getResidentList().add(oldResident);
                 apartmentRepository.save(newApartment);
-                oldResident.setApartment(newApartment);
             }
         } else {
             throw new Exception("Resident with id = " + resident.getId() + " is not found");
         }
-        return this.residentRepository.save(oldResident);
-    }
-
+        Resident savedResident = this.residentRepository.save(oldResident);
+        return residentConverter.toResponse(savedResident);
+    }    
+    
     @Transactional
-    public Resident updateResidentById(Long id, ResidentCreateRequest residentUpdate) throws RuntimeException {
-        Resident existingResident = this.fetchResidentById(id);
+    public ResidentResponse updateResidentById(Long id, ResidentCreateRequest residentUpdate) throws RuntimeException {
+        Resident existingResident = this.fetchResidentEntityById(id);
         
         // Update fields if provided
         if (residentUpdate.getName() != null) {
@@ -161,54 +160,47 @@ public class ResidentService {
             existingResident.setStatus(ResidentEnum.fromString(residentUpdate.getStatus()));
         }
         
-        // Handle apartment assignment
+        // Handle apartment assignment using many-to-many relationship
         if (residentUpdate.getApartmentId() != null) {
-            // Remove from old apartment if exists
-            if (existingResident.getApartment() != null) {
-                Apartment oldApartment = existingResident.getApartment();
-                if (oldApartment.getResidentList() != null) {
-                    oldApartment.getResidentList().remove(existingResident);
-                    apartmentRepository.save(oldApartment);
-                }
-            }
+            // Remove from old apartments if needed (optional for many-to-many)
+            // In many-to-many, a resident can belong to multiple apartments
             
             // Add to new apartment
             Apartment newApartment = apartmentRepository.findById(residentUpdate.getApartmentId())
                     .orElseThrow(() -> new RuntimeException("Apartment with id " + residentUpdate.getApartmentId() + " not found"));
             
-            existingResident.setApartment(newApartment);
-            
-            if (newApartment.getResidentList() != null) {
-                newApartment.getResidentList().add(existingResident);
-            } else {
-                newApartment.setResidentList(List.of(existingResident));
-            }
+            newApartment.getResidentList().add(existingResident);
             apartmentRepository.save(newApartment);
         }
         
-        return this.residentRepository.save(existingResident);
-    }    
-    
+        Resident savedResident = this.residentRepository.save(existingResident);
+        return residentConverter.toResponse(savedResident);
+    }
+      
     @Transactional
     public ApiResponse<String> deleteResident(Long id) throws Exception {
-        Resident resident = this.fetchResidentById(id);
+        Resident resident = this.fetchResidentEntityById(id);
         resident.setIsActive(0);
-        if (resident.getApartment() != null) {
-            Apartment apartment = apartmentRepository.findById(resident.getApartmentId()).orElseThrow(() -> new RuntimeException("Apartment with id " + resident.getApartmentId() + " not found"));
-            List<Resident> residentList = apartment.getResidentList();
-            residentList.remove(resident);
-            apartment.setResidentList(residentList);
+        
+        // Remove resident from all apartments using many-to-many relationship
+        if (resident.getApartments() != null && !resident.getApartments().isEmpty()) {
+            for (Apartment apartment : resident.getApartments()) {
+                apartment.getResidentList().remove(resident);
+                apartmentRepository.save(apartment);
+            }
+            resident.getApartments().clear();
         }
-        resident.setApartment(null);
+        
+        residentRepository.save(resident);
         ApiResponse<String> response = new ApiResponse<>();
         response.setCode(HttpStatus.OK.value());
         response.setMessage("delete resident success");
         response.setData(null);
         return response;
-    }
-
+    }    
+    
     @Transactional
-    public Resident createResidentWithApartment(ResidentWithApartmentCreateRequest request) {
+    public ResidentResponse createResidentWithApartment(ResidentWithApartmentCreateRequest request) {
         if (request.getApartmentOption() == null) {
             throw new IllegalArgumentException("Apartment option is required");
         }
@@ -247,16 +239,16 @@ public class ResidentService {
             throw new IllegalArgumentException("Invalid apartment option: " + request.getApartmentOption());
         }
 
-        // 3) Link bidirectionally
+        // 3) Save resident first
         resident = residentRepository.save(resident);
-
-        resident.setApartment(apartment);
+        // 4) Link using many-to-many relationship
         apartment.getResidentList().add(resident);
+        resident.getApartments().add(apartment);
 
-        // 4) Save apartment (cascade persists resident)
+        // 5) Save apartment
         Apartment savedApartment = apartmentRepository.save(apartment);
-        residentRepository.save(resident);
-        log.info("Apartment saved: {} with {} residents", savedApartment.getAddressNumber(), savedApartment.getResidentList().size());
-        return resident;
+        log.info("Apartment saved: {} with {} residentList", savedApartment.getAddressNumber(), savedApartment.getResidentList().size());
+        
+        return residentConverter.toResponse(resident);
     }
 }

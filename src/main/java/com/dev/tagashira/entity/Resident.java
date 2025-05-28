@@ -12,9 +12,11 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "residents")
+@Table(name = "residentList")
 @Getter
 @Setter
 @Builder
@@ -33,12 +35,12 @@ public class Resident {
 
     GenderEnum gender;
 
-    String cic;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "address_number")
+    String cic;    
+    
+    @ManyToMany(mappedBy = "residentList", fetch = FetchType.LAZY)
     @JsonIgnore
-    Apartment apartment;
+    @Builder.Default
+    Set<Apartment> apartments = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     ResidentEnum status;
@@ -55,12 +57,13 @@ public class Resident {
     public void beforePersist() {
         isActive = 1;
         statusDate = LocalDate.now();
-    }
-
-    @PostLoad
+    }    @PostLoad
     public void onLoad() {
         this.previousStatus = this.status;
-        this.apartmentId = apartment != null ? apartment.getAddressNumber() : null;
+        // For backward compatibility, get first apartment if exists
+        this.apartmentId = apartments != null && !apartments.isEmpty() 
+            ? apartments.iterator().next().getAddressNumber() 
+            : null;
     }
 
     @PreUpdate
