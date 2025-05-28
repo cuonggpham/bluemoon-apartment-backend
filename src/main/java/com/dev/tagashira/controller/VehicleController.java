@@ -3,7 +3,7 @@ package com.dev.tagashira.controller;
 
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
-import com.dev.tagashira.entity.Apartment;
+import com.dev.tagashira.dto.response.VehicleResponse;
 import com.dev.tagashira.entity.Vehicle;
 import com.dev.tagashira.service.VehicleService;
 import com.turkraft.springfilter.boot.Filter;
@@ -28,21 +28,21 @@ public class VehicleController {
     VehicleService vehicleService;
 
     @PostMapping
-    public ResponseEntity<Vehicle> addVehicle(@RequestBody Vehicle vehicle) {
+    public ResponseEntity<VehicleResponse> addVehicle(@RequestBody Vehicle vehicle) {
         return ResponseEntity.ok(this.vehicleService.create(vehicle));
     }
 
     @GetMapping
-    public ResponseEntity<PaginatedResponse<Vehicle>> getAllVehicles(@Filter Specification<Vehicle> spec,
+    public ResponseEntity<PaginatedResponse<VehicleResponse>> getAllVehicles(@Filter Specification<Vehicle> spec,
                                                                      @RequestParam(value = "page", defaultValue = "1") int page,
                                                                      @RequestParam(value = "size", defaultValue = "10") int size){
         Pageable pageable = PageRequest.of(page - 1, size);
-        PaginatedResponse<Vehicle> result = vehicleService.getAll(spec, pageable);
+        PaginatedResponse<VehicleResponse> result = vehicleService.getAll(spec, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<List<Vehicle>> getAllVehiclesById(@PathVariable("id") long apartmentId) {
+    public ResponseEntity<List<VehicleResponse>> getAllVehiclesById(@PathVariable("id") long apartmentId) {
         return ResponseEntity.ok(this.vehicleService.findAllByApartmentId(apartmentId));
     }
 

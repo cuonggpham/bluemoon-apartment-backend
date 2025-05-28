@@ -1,7 +1,9 @@
 package com.dev.tagashira.service;
 
+import com.dev.tagashira.converter.VehicleConverter;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
+import com.dev.tagashira.dto.response.VehicleResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Vehicle;
 import com.dev.tagashira.repository.ApartmentRepository;
@@ -24,29 +26,33 @@ import java.util.List;
 public class VehicleService {
     VehicleRepository vehicleRepository;
     ApartmentRepository apartmentRepository;
+    VehicleConverter vehicleConverter;
 
     @Transactional
-    public List<Vehicle> findAllByApartmentId(long apartmentId) {
+    public List<VehicleResponse> findAllByApartmentId(long apartmentId) {
         if (!this.apartmentRepository.existsById(apartmentId)) {
             throw new RuntimeException("Apartment with id " + apartmentId + " does not exist");
         }
-        return this.vehicleRepository.findAllByApartment_AddressNumber(apartmentId);
+        List<Vehicle> vehicles = this.vehicleRepository.findAllByApartment_AddressNumber(apartmentId);
+        return vehicleConverter.toResponseList(vehicles);
     }
 
     @Transactional
-    public PaginatedResponse<Vehicle> getAll(Specification<Vehicle> spec, Pageable pageable) {
+    public PaginatedResponse<VehicleResponse> getAll(Specification<Vehicle> spec, Pageable pageable) {
         Page<Vehicle> pageVehicle = vehicleRepository.findAll(spec,pageable);
-        return PaginatedResponse.<Vehicle>builder()
+        List<VehicleResponse> vehicleResponses = vehicleConverter.toResponseList(pageVehicle.getContent());
+        
+        return PaginatedResponse.<VehicleResponse>builder()
                 .pageSize(pageable.getPageSize())
                 .curPage(pageable.getPageNumber())
                 .totalPages(pageVehicle.getTotalPages())
                 .totalElements(pageVehicle.getNumberOfElements())
-                .result(pageVehicle.getContent())
+                .result(vehicleResponses)                
                 .build();
     }
 
     @Transactional
-    public Vehicle create(Vehicle vehicleRequest) {
+    public VehicleResponse create(Vehicle vehicleRequest) {
         if (this.vehicleRepository.findById(vehicleRequest.getId()).isPresent()) {
             throw new RuntimeException("Vehicle with id = " + vehicleRequest.getId()+ " already exists");
         }
@@ -57,7 +63,8 @@ public class VehicleService {
         vehicle.setId(vehicleRequest.getId());
         vehicle.setCategory(vehicleRequest.getCategory());
         vehicle.setApartment(this.apartmentRepository.findById(vehicleRequest.getApartmentId()).orElseThrow(() -> new RuntimeException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist")));
-        return this.vehicleRepository.save(vehicle);
+        Vehicle savedVehicle = this.vehicleRepository.save(vehicle);
+        return vehicleConverter.toResponse(savedVehicle);
     }
 
     @Transactional
