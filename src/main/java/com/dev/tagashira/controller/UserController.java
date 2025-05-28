@@ -37,7 +37,7 @@ public class UserController {
 
     //fetch user by id
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable("id") long id) throws Exception {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable("id") long id) throws UserInfoException {
         User fetchUser = this.userService.fetchUserById(id);
         UserResponse userResponse = this.userService.UserToUserResponse(fetchUser);
         return ResponseEntity.status(HttpStatus.OK).body(userResponse);
@@ -45,21 +45,21 @@ public class UserController {
 
     //Create new user
     @PostMapping("/register")
-    public ResponseEntity<User> createNewUser(@Valid @RequestBody UserCreateRequest apiUser) throws Exception {
+    public ResponseEntity<User> createNewUser(@Valid @RequestBody UserCreateRequest apiUser) throws UserInfoException {
         User user = this.userService.createUser(apiUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     //Delete user by id
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable("id") long id) throws Exception {
+    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable("id") long id) throws UserInfoException {
         ApiResponse<String> response = this.userService.deleteUser(id);
         return ResponseEntity.ok(response);
     }
 
     //Update user
     @PutMapping()
-    public ResponseEntity<User> updateUser(@RequestBody User user) throws Exception {
+    public ResponseEntity<User> updateUser(@RequestBody User user) throws UserInfoException {
         User apiUser = this.userService.updateUser(user);
         return ResponseEntity.ok(apiUser);
     }

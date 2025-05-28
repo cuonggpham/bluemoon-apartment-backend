@@ -6,6 +6,9 @@ import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.VehicleResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Vehicle;
+import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.InvalidDataException;
+import com.dev.tagashira.exception.VehicleNotFoundException;
 import com.dev.tagashira.repository.ApartmentRepository;
 import com.dev.tagashira.repository.VehicleRepository;
 import lombok.AccessLevel;
@@ -26,12 +29,12 @@ import java.util.List;
 public class VehicleService {
     VehicleRepository vehicleRepository;
     ApartmentRepository apartmentRepository;
-    VehicleConverter vehicleConverter;
-
+    VehicleConverter vehicleConverter;    
+    
     @Transactional
     public List<VehicleResponse> findAllByApartmentId(long apartmentId) {
         if (!this.apartmentRepository.existsById(apartmentId)) {
-            throw new RuntimeException("Apartment with id " + apartmentId + " does not exist");
+            throw new ApartmentNotFoundException("Apartment with id " + apartmentId + " does not exist");
         }
         List<Vehicle> vehicles = this.vehicleRepository.findAllByApartment_AddressNumber(apartmentId);
         return vehicleConverter.toResponseList(vehicles);
@@ -49,27 +52,27 @@ public class VehicleService {
                 .totalElements(pageVehicle.getNumberOfElements())
                 .result(vehicleResponses)                
                 .build();
-    }
-
+    }    
+    
     @Transactional
     public VehicleResponse create(Vehicle vehicleRequest) {
         if (this.vehicleRepository.findById(vehicleRequest.getId()).isPresent()) {
-            throw new RuntimeException("Vehicle with id = " + vehicleRequest.getId()+ " already exists");
+            throw new InvalidDataException("Vehicle with id = " + vehicleRequest.getId()+ " already exists");
         }
         if (vehicleRequest.getId() == null){
-            throw new RuntimeException("Vehicle id is null");
+            throw new InvalidDataException("Vehicle id is null");
         }
         Vehicle vehicle = new Vehicle();
         vehicle.setId(vehicleRequest.getId());
         vehicle.setCategory(vehicleRequest.getCategory());
-        vehicle.setApartment(this.apartmentRepository.findById(vehicleRequest.getApartmentId()).orElseThrow(() -> new RuntimeException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist")));
+        vehicle.setApartment(this.apartmentRepository.findById(vehicleRequest.getApartmentId()).orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist")));
         Vehicle savedVehicle = this.vehicleRepository.save(vehicle);
         return vehicleConverter.toResponse(savedVehicle);
-    }
-
+    }    
+    
     @Transactional
-    public ApiResponse<String> deleteVehicle(Long id, Vehicle vehicleRequest) throws Exception {
-        Apartment apartment = this.apartmentRepository.findById(id).orElseThrow(() -> new RuntimeException("Apartment with id " + id + " does not exist"));
+    public ApiResponse<String> deleteVehicle(Long id, Vehicle vehicleRequest) {
+        Apartment apartment = this.apartmentRepository.findById(id).orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + id + " does not exist"));
         Vehicle vehicle = this.vehicleRepository.findById(vehicleRequest.getId()).orElse(null);
         List<Vehicle> vehicleList = apartment.getVehicleList();
         vehicleList.remove(vehicle);
@@ -82,18 +85,18 @@ public class VehicleService {
         response.setMessage("delete vehicle success");
         response.setData(null);
         return response;
-    }
-
+    }    
+    
     @Transactional
     public VehicleResponse update(String id, Vehicle vehicleRequest) {
         Vehicle vehicle = this.vehicleRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Vehicle with id = " + id + " not found"));
+            .orElseThrow(() -> new VehicleNotFoundException("Vehicle with id = " + id + " not found"));
         if (vehicleRequest.getCategory() != null) {
             vehicle.setCategory(vehicleRequest.getCategory());
         }
         if (vehicleRequest.getApartmentId() != null) {
             Apartment apartment = this.apartmentRepository.findById(vehicleRequest.getApartmentId())
-                .orElseThrow(() -> new RuntimeException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist"));
+                .orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist"));
             vehicle.setApartment(apartment);
         }
         // Optionally update registerDate if needed

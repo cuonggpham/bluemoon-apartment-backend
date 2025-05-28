@@ -5,18 +5,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.dev.tagashira.dto.request.UserLoginDTO;
 import com.dev.tagashira.dto.request.UserSsoDTO;
 import com.dev.tagashira.dto.response.ResLoginDTO;
+import com.dev.tagashira.exception.InvalidDataException;
 import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.UserRepository;
 import com.nimbusds.jose.shaded.gson.Gson;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -30,7 +28,6 @@ import com.dev.tagashira.entity.User;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -234,12 +231,12 @@ public class AuthService {
             }
 
             Map<String,Object> attributes = new HashMap<>();
-            attributes.put("email", userSsoDTO.getEmail());
+            attributes.put("email", userSsoDTO.getEmail());            
             ResLoginDTO res = new ResLoginDTO();
             ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(userRepository.findByEmail(userSsoDTO.getEmail()).getId(),userSsoDTO.getEmail(),userSsoDTO.getName());
             res.setUser(userLogin);
             return this.securityUtil.createRefreshToken(userSsoDTO.getEmail(),res); // todo: Hung fix
         }
-        else throw new RuntimeException("Account is not found");
+        else throw new InvalidDataException("Account is not found");
     }
 }

@@ -12,6 +12,9 @@ import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.ResidentResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
+import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.InvalidDataException;
+import com.dev.tagashira.exception.ResidentNotFoundException;
 import com.dev.tagashira.repository.ApartmentRepository;
 import com.dev.tagashira.repository.ResidentRepository;
 import jakarta.transaction.Transactional;
@@ -65,24 +68,24 @@ public class ResidentService {
         page.setResult(residentConverter.toResponseList(pageResident.getContent()));
         return page;
     }    
-    
+      
     @Transactional
-    public ResidentResponse fetchResidentById(Long id) throws RuntimeException {
+    public ResidentResponse fetchResidentById(Long id) {
         Resident resident = this.residentRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Resident with id = "+id+ " is not found"));
+                .orElseThrow(()-> new ResidentNotFoundException("Resident with id = "+id+ " is not found"));
         return residentConverter.toResponse(resident);
     }
 
     @Transactional
-    public Resident fetchResidentEntityById(Long id) throws RuntimeException {
+    public Resident fetchResidentEntityById(Long id) {
         return this.residentRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Resident with id = "+id+ " is not found"));
+                .orElseThrow(()-> new ResidentNotFoundException("Resident with id = "+id+ " is not found"));
     }
-      
+        
     @Transactional
-    public ResidentResponse createResident(ResidentCreateRequest residentCreate) throws RuntimeException {
+    public ResidentResponse createResident(ResidentCreateRequest residentCreate) {
         if (this.residentRepository.findById(residentCreate.getId()).isPresent()) {
-            throw new RuntimeException("Resident with id = " + residentCreate.getId() + " already exists");
+            throw new InvalidDataException("Resident with id = " + residentCreate.getId() + " already exists");
         }
 
         Resident resident = Resident.builder()
@@ -100,7 +103,7 @@ public class ResidentService {
         // Handle apartment assignment using many-to-many relationship
         if (residentCreate.getApartmentId() != null) {
             Apartment apartment = apartmentRepository.findById(residentCreate.getApartmentId())
-                    .orElseThrow(() -> new RuntimeException("Apartment with id " + residentCreate.getApartmentId() + " not found"));
+                    .orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + residentCreate.getApartmentId() + " not found"));
             
             // Add resident to apartment's residentList set
             apartment.getResidentList().add(savedResident);
@@ -108,7 +111,7 @@ public class ResidentService {
         }
 
         return residentConverter.toResponse(savedResident);
-    }    
+    }
     
     @Transactional
     public ResidentResponse updateResident(ResidentUpdateRequest resident) throws Exception {

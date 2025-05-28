@@ -3,16 +3,15 @@ package com.dev.tagashira.service;
 import com.dev.tagashira.constant.PaymentEnum;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Apartment;
-import com.dev.tagashira.entity.Fee;
-import com.dev.tagashira.entity.InvoiceApartment;
 import com.dev.tagashira.entity.UtilityBill;
+import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.FileProcessingException;
+import com.dev.tagashira.exception.UtilityBillNotFoundException;
 import com.dev.tagashira.repository.ApartmentRepository;
 import com.dev.tagashira.repository.UtilityBillRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,10 +49,10 @@ public class UtilityBillService {
                 Long apartmentId = (long) row.getCell(0).getNumericCellValue();
                 double electricity = row.getCell(1).getNumericCellValue();
                 double water = row.getCell(2).getNumericCellValue();
-                double internet = row.getCell(3).getNumericCellValue();
-
+                double internet = row.getCell(3).getNumericCellValue();                
+                
                 Apartment apartment = apartmentRepository.findById(apartmentId)
-                        .orElseThrow(() -> new RuntimeException("Apartment not found: " + apartmentId));
+                        .orElseThrow(() -> new ApartmentNotFoundException("Apartment not found: " + apartmentId));
 
                 UtilityBill utilityBill = UtilityBill.builder()
                         .apartment(apartment)
@@ -66,12 +65,12 @@ public class UtilityBillService {
                         .build();
 
                 utilityBills.add(utilityBill);
-            }
-
+            }            
+            
             // Save to database
             utilityBillRepository.saveAll(utilityBills);
         } catch (Exception e) {
-            throw new RuntimeException("Error while reading Excel file", e);
+            throw new FileProcessingException("Error while reading Excel file", e);
         }
         return utilityBills;
     }
@@ -89,12 +88,12 @@ public class UtilityBillService {
 
     public List<UtilityBill> fetchUtilityBillsByApartmentId(Long id) {
         return utilityBillRepository.findByApartmentId(id);
-    }
-
+    }    
+    
     @Transactional
-    public UtilityBill updateUtilityBill (Long id) throws RuntimeException {
+    public UtilityBill updateUtilityBill (Long id) {
         UtilityBill utilityBill = utilityBillRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Not found id " + id));
+                .orElseThrow(() -> new UtilityBillNotFoundException("Not found id " + id));
         utilityBill.setPaymentStatus(PaymentEnum.Paid);
         return utilityBillRepository.save(utilityBill);
     }

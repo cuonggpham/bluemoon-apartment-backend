@@ -4,8 +4,8 @@ import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Fee;
-import com.dev.tagashira.entity.Resident;
-import com.dev.tagashira.exception.UserInfoException;
+import com.dev.tagashira.exception.FeeNotFoundException;
+
 import com.dev.tagashira.repository.FeeRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,13 +30,13 @@ public class FeeService {
         page.setTotalElements(pageFee.getNumberOfElements());
         page.setResult(pageFee.getContent());
         return page;
+    }    
+    
+    public Fee fetchFeeById (Long id) {
+        return feeRepository.findById(id).orElseThrow(() -> new FeeNotFoundException("Fee with code = " + id + " is not found"));
     }
 
-    public Fee fetchFeeById (Long id) throws RuntimeException {
-        return feeRepository.findById(id).orElseThrow(() -> new RuntimeException("Fee with code = " + id + " is not found"));
-    }
-
-    public Fee createFee (FeeCreateRequest feeCreateRequest) throws RuntimeException {
+    public Fee createFee (FeeCreateRequest feeCreateRequest) {
         Fee fee = new Fee();
         fee.setName(feeCreateRequest.getName());
         fee.setDescription(feeCreateRequest.getDescription());
@@ -45,7 +45,7 @@ public class FeeService {
         return this.feeRepository.save(fee);
     }
 
-    public Fee updateFee (Fee fee) throws RuntimeException {
+    public Fee updateFee (Fee fee) {
         Fee oldFee = this.fetchFeeById(fee.getId());
         if(oldFee != null) {
             if(fee.getName() != null) oldFee.setName(fee.getName());
@@ -53,13 +53,13 @@ public class FeeService {
             if(fee.getFeeTypeEnum() != null) oldFee.setFeeTypeEnum(fee.getFeeTypeEnum());
             if(fee.getUnitPrice() != null) oldFee.setUnitPrice(fee.getUnitPrice());
         } else {
-            throw new RuntimeException("Fee with code = " + fee.getId() + " is not found");
+            throw new FeeNotFoundException("Fee with code = " + fee.getId() + " is not found");
         }
         return this.feeRepository.save(oldFee);
     }
 
     //No exception handling is needed in this method
-    public ApiResponse<String> deleteFee(Long id) throws RuntimeException {
+    public ApiResponse<String> deleteFee(Long id) {
        Fee fee = this.fetchFeeById(id);
        this.feeRepository.delete(fee);
 

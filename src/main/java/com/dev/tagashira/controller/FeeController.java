@@ -35,14 +35,14 @@ public class FeeController {
 
     //fetch fee by feeCode
     @GetMapping("/{id}")
-    public ResponseEntity<Fee> getFeeByFeeCode(@PathVariable("id") Long id) throws Exception {
+    public ResponseEntity<Fee> getFeeByFeeCode(@PathVariable("id") Long id) {
         Fee fetchFee = this.feeService.fetchFeeById(id);
         return ResponseEntity.status(HttpStatus.OK).body(fetchFee);
     }
 
     //create new fee
     @PostMapping()
-    public ResponseEntity<Fee> createFee(@Valid @RequestBody FeeCreateRequest apiFee) throws Exception {
+    public ResponseEntity<Fee> createFee(@Valid @RequestBody FeeCreateRequest apiFee) {
         Fee fee = this.feeService.createFee(apiFee);
         return ResponseEntity.status(HttpStatus.CREATED).body(fee);
     }

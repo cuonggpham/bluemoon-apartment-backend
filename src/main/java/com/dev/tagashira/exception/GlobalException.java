@@ -3,6 +3,7 @@ package com.dev.tagashira.exception;
 
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.google.api.client.auth.oauth2.TokenResponseException;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,16 +18,65 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalException {
+    
+    // Handle specific not found exceptions
+    @ExceptionHandler(value = {
+            ApartmentNotFoundException.class,
+            ResidentNotFoundException.class,
+            VehicleNotFoundException.class,
+            FeeNotFoundException.class,
+            InvoiceNotFoundException.class,
+            UtilityBillNotFoundException.class,
+            EntityNotFoundException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleNotFoundException(Exception ex) {
+        ApiResponse<Object> res = new ApiResponse<Object>();
+        res.setCode(HttpStatus.NOT_FOUND.value()); // 404
+        res.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
+    }
+    
+    // Handle data validation exceptions
+    @ExceptionHandler(value = {
+            InvalidDataException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleInvalidDataException(Exception ex) {
+        ApiResponse<Object> res = new ApiResponse<Object>();
+        res.setCode(HttpStatus.BAD_REQUEST.value()); // 400
+        res.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+    }
+    
+    // Handle file processing exceptions
+    @ExceptionHandler(value = {
+            FileProcessingException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleFileProcessingException(Exception ex) {
+        ApiResponse<Object> res = new ApiResponse<Object>();
+        res.setCode(HttpStatus.INTERNAL_SERVER_ERROR.value()); // 500
+        res.setMessage("File processing error: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+    }
+    
+    // Handle user info exceptions
     @ExceptionHandler(value = {
             UserInfoException.class,
-            UsernameNotFoundException.class,
-            RuntimeException.class
+            UsernameNotFoundException.class
     })
-    public ResponseEntity<ApiResponse<Object>> handleIdException(Exception ex) {
+    public ResponseEntity<ApiResponse<Object>> handleUserException(Exception ex) {
         ApiResponse<Object> res = new ApiResponse<Object>();
         res.setCode(HttpStatus.BAD_REQUEST.value()); //400
         res.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+    }
+    
+    // Handle generic runtime exceptions (fallback)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex) {
+        ApiResponse<Object> res = new ApiResponse<Object>();
+        res.setCode(HttpStatus.INTERNAL_SERVER_ERROR.value()); //500
+        res.setMessage("Internal server error: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

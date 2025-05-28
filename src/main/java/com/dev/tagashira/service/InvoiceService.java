@@ -5,9 +5,11 @@ import com.dev.tagashira.constant.PaymentEnum;
 import com.dev.tagashira.dto.request.InvoiceRequest;
 import com.dev.tagashira.dto.response.*;
 import com.dev.tagashira.entity.*;
-import com.dev.tagashira.exception.UserInfoException;
+import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.InvalidDataException;
+import com.dev.tagashira.exception.InvoiceNotFoundException;
+
 import com.dev.tagashira.repository.*;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,13 +68,13 @@ public class InvoiceService {
                         .collect(Collectors.toList())
         );
         return page;
-    }
-
+    }    
+    
     @Transactional
-    public InvoiceResponse fetchInvoiceById(String id) throws RuntimeException {
-        Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new RuntimeException("Invoice with code = " + id + " is not found"));
+    public InvoiceResponse fetchInvoiceById(String id) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new InvoiceNotFoundException("Invoice with code = " + id + " is not found"));
         if (invoice.getIsActive() == 0) {
-            throw new RuntimeException("Invoice with id " + id + " is not active");
+            throw new InvalidDataException("Invoice with id " + id + " is not active");
         }
         LocalDate localDate = invoice.getUpdatedAt().atZone(ZoneId.systemDefault()).toLocalDate();
         List<Fee> feeList = feeInvoiceRepository.findFeesByInvoiceId(id);
@@ -85,11 +87,11 @@ public class InvoiceService {
                 .lastUpdated(localDate)
                 .feeList(feeList)
                 .build();
-    }
-
-    public List<InvoiceApartmentResponse> fetchAllInvoicesByApartmentId(Long id) throws RuntimeException {
+    }    
+    
+    public List<InvoiceApartmentResponse> fetchAllInvoicesByApartmentId(Long id) {
         Apartment apartment = apartmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Not found apartment " + id));
+                .orElseThrow(() -> new ApartmentNotFoundException("Not found apartment " + id));
         List<InvoiceApartmentResponse> invoiceApartmentResponseList = invoiceApartmentRepository.findInvoicesByApartmentId(id);
         invoiceApartmentResponseList.forEach(response -> {
             InvoiceApartment invoiceApartment = invoiceApartmentRepository.findByInvoiceIdAndApartmentAddressNumber(response.getId(),id);
@@ -128,10 +130,10 @@ public class InvoiceService {
         });
 
         return invoiceApartmentResponseList;
-    }
-
+    }    
+    
     @Transactional
-    public List<InvoiceApartmentResponse> updateContributionFund(Long apartmentId, String invoiceId, Map<Long, Double> feeAmounts) throws RuntimeException {
+    public List<InvoiceApartmentResponse> updateContributionFund(Long apartmentId, String invoiceId, Map<Long, Double> feeAmounts) {
         InvoiceApartment invoiceApartment = invoiceApartmentRepository.findByInvoiceIdAndApartmentAddressNumber(invoiceId, apartmentId);
         // Update the feeAmountMap field
         if (invoiceApartment.getFeeAmounts() == null) {
@@ -141,23 +143,23 @@ public class InvoiceService {
         // Save the updated entity
         invoiceApartmentRepository.save(invoiceApartment);
         return fetchAllInvoicesByApartmentId(apartmentId);
-    }
-
+    }    
+    
     @Transactional
-    public InvoiceApartment updateInvoiceApartment(Long id) throws RuntimeException {
+    public InvoiceApartment updateInvoiceApartment(Long id) {
         InvoiceApartment invoiceApartment = invoiceApartmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Not found id " + id));
+                .orElseThrow(() -> new InvoiceNotFoundException("Not found id " + id));
         invoiceApartment.setPaymentStatus(PaymentEnum.Paid);
         return invoiceApartmentRepository.save(invoiceApartment);
-    }
-
+    }    
+    
     @Transactional
-    public InvoiceResponse createInvoice(InvoiceRequest request) throws RuntimeException {
+    public InvoiceResponse createInvoice(InvoiceRequest request) {
         Invoice invoice = new Invoice();
         //Check if the invoice exists or not
         if (invoiceRepository.findById(request.getInvoiceId()).isPresent()) {
             Invoice response = invoiceRepository.findById(request.getInvoiceId()).get();
-            if(response.getIsActive()==1) throw new RuntimeException("Invoice with id = " + request.getInvoiceId() + " is already actived");
+            if(response.getIsActive()==1) throw new InvalidDataException("Invoice with id = " + request.getInvoiceId() + " is already actived");
             else invoice.setIsActive(1);
         }
         // If it does not exist, create a new Invoice
@@ -236,11 +238,9 @@ public class InvoiceService {
         // Return the values of the map as a list
         return new ArrayList<>(totalInvoiceMap.values());
     }
-
-
-    public InvoiceResponse updateInvoice (InvoiceRequest request) throws RuntimeException {
+    public InvoiceResponse updateInvoice (InvoiceRequest request) {
         // Fetch invoice by ID
-        Invoice invoice = invoiceRepository.findById(request.getInvoiceId()).orElseThrow(() -> new RuntimeException("Invoice with code = " + request.getInvoiceId() + " is not found"));
+        Invoice invoice = invoiceRepository.findById(request.getInvoiceId()).orElseThrow(() -> new InvoiceNotFoundException("Invoice with code = " + request.getInvoiceId() + " is not found"));
 
         // Update invoice fields
         invoice.setId(request.getInvoiceId());
@@ -271,10 +271,10 @@ public class InvoiceService {
                 .lastUpdated(localDate)
                 .feeList(feeListAfterUpdate)
                 .build();
-    }
-
-    public ApiResponse<String> deleteInvoice(String id) throws RuntimeException {
-        Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new RuntimeException("Invoice with code = " + id + " is not found"));
+    }    
+    
+    public ApiResponse<String> deleteInvoice(String id) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new InvoiceNotFoundException("Invoice with code = " + id + " is not found"));
         //Delete all record by invoiceId in fee_invoice table
         feeInvoiceRepository.deleteByInvoiceId(id);
         //Delete all record by invoiceId in invoice_apartment table

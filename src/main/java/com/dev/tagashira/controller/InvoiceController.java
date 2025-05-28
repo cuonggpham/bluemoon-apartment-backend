@@ -38,7 +38,7 @@ public class InvoiceController {
 
     //fetch invoice by id
     @GetMapping("/{id}")
-    public ResponseEntity<InvoiceResponse> getInvoiceById(@PathVariable String id) throws Exception {
+    public ResponseEntity<InvoiceResponse> getInvoiceById(@PathVariable String id) {
         InvoiceResponse invoice = this.invoiceService.fetchInvoiceById(id);
         return ResponseEntity.status(HttpStatus.OK).body(invoice);
     }
@@ -50,21 +50,21 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<InvoiceResponse> createInvoice(@Valid @RequestBody InvoiceRequest apiInvoice) throws Exception  {
+    public ResponseEntity<InvoiceResponse> createInvoice(@Valid @RequestBody InvoiceRequest apiInvoice) {
         InvoiceResponse invoice = this.invoiceService.createInvoice(apiInvoice);
         return ResponseEntity.status(HttpStatus.CREATED).body(invoice);
     }
 
     //update invoice
     @PutMapping()
-    public ResponseEntity<InvoiceResponse> updateInvoice(@RequestBody InvoiceRequest apiInvoice) throws Exception {
+    public ResponseEntity<InvoiceResponse> updateInvoice(@RequestBody InvoiceRequest apiInvoice) {
         InvoiceResponse invoice = this.invoiceService.updateInvoice(apiInvoice);
         return ResponseEntity.status(HttpStatus.OK).body(invoice);
     }
 
     //Delete resident by feeCode
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteInvoice(@PathVariable("id") String id) throws Exception {
+    public ResponseEntity<ApiResponse<String>> deleteInvoice(@PathVariable("id") String id) {
         ApiResponse<String> response = this.invoiceService.deleteInvoice(id);
         return ResponseEntity.ok(response);
     }
