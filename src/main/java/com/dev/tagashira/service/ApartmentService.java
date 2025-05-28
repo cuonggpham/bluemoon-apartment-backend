@@ -91,18 +91,19 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(addressID)
                 .orElseThrow(() -> new EntityNotFoundException("Not found apartment " + addressID));
 
-        List<Long> requestResidents = Optional.ofNullable(request.getResidents()).orElse(Collections.emptyList());
-        List<Resident> validResidents = residentRepository.findAllById(requestResidents);        // update owner + apartment status
+        List<Long> requestResidents = Optional.ofNullable(request.getResidents())
+                .orElse(Collections.emptyList());
+        List<Resident> validResidents = residentRepository.findAllById(requestResidents);
+
+        if (validResidents.isEmpty()){
+            validResidents = new ArrayList<>();
+        }
+
+        // update owner + apartment status
         if (request.getOwnerId() != null) {
             Resident newOwner = residentService.fetchResidentById(request.getOwnerId());
             Resident currentOwner = apartment.getOwner();
-            
-            // Check if the new owner is already an owner of another apartment
-            Optional<Apartment> existingApartmentWithOwner = apartmentRepository.findByOwnerId(request.getOwnerId());
-            if (existingApartmentWithOwner.isPresent() && !existingApartmentWithOwner.get().getAddressNumber().equals(addressID)) {
-                throw new RuntimeException("Resident with ID " + request.getOwnerId() + " is already an owner of another apartment");
-            }
-            
+
             validResidents.add(newOwner);
             if (currentOwner != null && !currentOwner.getId().equals(newOwner.getId())) {
                 currentOwner.setApartment(null); // Clear the current owner's apartment
