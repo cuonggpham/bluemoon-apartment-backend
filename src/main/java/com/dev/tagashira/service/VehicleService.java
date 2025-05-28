@@ -83,4 +83,24 @@ public class VehicleService {
         response.setData(null);
         return response;
     }
+
+    @Transactional
+    public VehicleResponse update(String id, Vehicle vehicleRequest) {
+        Vehicle vehicle = this.vehicleRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Vehicle with id = " + id + " not found"));
+        if (vehicleRequest.getCategory() != null) {
+            vehicle.setCategory(vehicleRequest.getCategory());
+        }
+        if (vehicleRequest.getApartmentId() != null) {
+            Apartment apartment = this.apartmentRepository.findById(vehicleRequest.getApartmentId())
+                .orElseThrow(() -> new RuntimeException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist"));
+            vehicle.setApartment(apartment);
+        }
+        // Optionally update registerDate if needed
+        if (vehicleRequest.getRegisterDate() != null) {
+            vehicle.setRegisterDate(vehicleRequest.getRegisterDate());
+        }
+        Vehicle savedVehicle = this.vehicleRepository.save(vehicle);
+        return vehicleConverter.toResponse(savedVehicle);
+    }
 }

@@ -50,4 +50,9 @@ public class VehicleController {
     public ApiResponse<String> deleteVehicle(@PathVariable("id") Long apartmentId, @RequestBody Vehicle vehicle) throws Exception {
         return this.vehicleService.deleteVehicle(apartmentId, vehicle);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<VehicleResponse> updateVehicle(@PathVariable("id") String id, @RequestBody Vehicle vehicle) {
+        return ResponseEntity.ok(this.vehicleService.update(id, vehicle));
+    }
 }
