@@ -37,8 +37,8 @@ public class ApartmentConverter {
                 .gender(apartment.getOwner().getGender().toString())
                 .cic(apartment.getOwner().getCic())
                 .build();
-        }
-
+        }        
+        
         return ApartmentResponse.builder()
             .addressNumber(apartment.getAddressNumber())
             .area(apartment.getArea())
@@ -46,6 +46,9 @@ public class ApartmentConverter {
             .ownerPhone(apartment.getOwnerPhone() != null ? apartment.getOwnerPhone().toString() : null)
             .owner(owner)
             .residents(residents)
+            .numberOfMembers(apartment.getNumberOfMembers())
+            .numberOfMotorbikes(apartment.getNumberOfMotorbikes())
+            .numberOfCars(apartment.getNumberOfCars())
             .build();
     }
 

@@ -20,6 +20,9 @@ public class ApartmentResponse {
     private String ownerPhone;
     private ResidentSummaryResponse owner;
     private List<ResidentSummaryResponse> residents;
+    private Integer numberOfMembers;
+    private Long numberOfMotorbikes;
+    private Long numberOfCars;
 
     @Data
     @NoArgsConstructor
