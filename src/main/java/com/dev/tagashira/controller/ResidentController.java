@@ -6,6 +6,7 @@ import com.dev.tagashira.dto.request.ResidentWithApartmentCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.ResidentResponse;
+import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.service.ResidentService;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.turkraft.springfilter.boot.Filter;
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -86,6 +88,29 @@ public class ResidentController {
         ApiResponse<String> response = this.residentService.deleteResident(id);
         return ResponseEntity.ok(response);
     }    
+    
+    //Force delete resident by id with owner cleanup
+    @DeleteMapping("/{id}/force")
+    public ResponseEntity<ApiResponse<String>> forceDeleteResident(
+            @PathVariable("id") long id,
+            @RequestParam(value = "forceDelete", defaultValue = "true") boolean forceDelete) throws Exception {
+        ApiResponse<String> response = this.residentService.deleteResidentWithOwnerCleanup(id, forceDelete);
+        return ResponseEntity.ok(response);
+    }
+    
+    //Check if resident is an owner
+    @GetMapping("/{id}/is-owner")
+    public ResponseEntity<Boolean> isResidentOwner(@PathVariable("id") long id) {
+        boolean isOwner = this.residentService.isResidentOwner(id);
+        return ResponseEntity.ok(isOwner);
+    }
+    
+    //Get apartments owned by resident
+    @GetMapping("/{id}/owned-apartments")
+    public ResponseEntity<List<Apartment>> getOwnedApartments(@PathVariable("id") long id) {
+        List<Apartment> ownedApartments = this.residentService.getApartmentsOwnedByResident(id);
+        return ResponseEntity.ok(ownedApartments);
+    }
       
     //Update resident
     @PutMapping()

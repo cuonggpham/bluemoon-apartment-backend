@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -176,10 +177,20 @@ public class ResidentService {
         Resident savedResident = this.residentRepository.save(existingResident);
         return residentConverter.toResponse(savedResident);
     }
-      
+        
     @Transactional
     public ApiResponse<String> deleteResident(Long id) throws Exception {
         Resident resident = this.fetchResidentEntityById(id);
+        
+        // Check if resident owns any apartments
+        List<Apartment> ownedApartments = apartmentRepository.findAllByOwnerId(id);
+        if (!ownedApartments.isEmpty()) {
+            // Prevent deletion if resident owns apartments without proper handling
+            throw new RuntimeException("Cannot delete resident with ID " + id + 
+                " because they own " + ownedApartments.size() + " apartment(s). " +
+                "Please transfer ownership or remove owner assignment before deletion.");
+        }
+        
         resident.setIsActive(0);
         
         // Remove resident from all apartments using many-to-many relationship
@@ -197,7 +208,62 @@ public class ResidentService {
         response.setMessage("delete resident success");
         response.setData(null);
         return response;
-    }    
+    }
+    
+    /**
+     * Force delete a resident, automatically removing owner assignments from all owned apartments.
+     * This method should be used with caution and only by administrators.
+     * 
+     * @param id The ID of the resident to delete
+     * @param forceDelete If true, automatically removes owner assignments; if false, throws exception if resident owns apartments
+     * @return ApiResponse indicating success or failure
+     * @throws Exception if resident not found or other errors occur
+     */
+    @Transactional
+    public ApiResponse<String> deleteResidentWithOwnerCleanup(Long id, boolean forceDelete) throws Exception {
+        Resident resident = this.fetchResidentEntityById(id);
+        
+        // Handle owned apartments
+        List<Apartment> ownedApartments = apartmentRepository.findAllByOwnerId(id);
+        if (!ownedApartments.isEmpty()) {
+            if (!forceDelete) {
+                throw new RuntimeException("Cannot delete resident with ID " + id + 
+                    " because they own " + ownedApartments.size() + " apartment(s). " +
+                    "Please transfer ownership or remove owner assignment before deletion, " +
+                    "or use force delete to automatically remove owner assignments.");
+            }
+            
+            // Force delete: Remove owner assignments from all owned apartments
+            log.warn("Force deleting resident {} who owns {} apartments. Removing owner assignments.", 
+                    id, ownedApartments.size());
+            
+            for (Apartment apartment : ownedApartments) {
+                apartment.setOwner(null);
+                apartmentRepository.save(apartment);
+                log.info("Removed owner assignment from apartment {}", apartment.getAddressNumber());
+            }
+        }
+        
+        resident.setIsActive(0);
+        
+        // Remove resident from all apartments using many-to-many relationship
+        if (resident.getApartments() != null && !resident.getApartments().isEmpty()) {
+            for (Apartment apartment : resident.getApartments()) {
+                apartment.getResidentList().remove(resident);
+                apartmentRepository.save(apartment);
+            }
+            resident.getApartments().clear();
+        }
+        
+        residentRepository.save(resident);
+        
+        ApiResponse<String> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("delete resident success" + 
+            (ownedApartments.isEmpty() ? "" : " (removed owner assignments from " + ownedApartments.size() + " apartments)"));
+        response.setData(null);
+        return response;
+    }
     
     @Transactional
     public ResidentResponse createResidentWithApartment(ResidentWithApartmentCreateRequest request) {
@@ -250,5 +316,28 @@ public class ResidentService {
         log.info("Apartment saved: {} with {} residentList", savedApartment.getAddressNumber(), savedApartment.getResidentList().size());
         
         return residentConverter.toResponse(resident);
+    }
+    
+    /**
+     * Check if a resident owns any apartments
+     * 
+     * @param residentId The ID of the resident to check
+     * @return true if the resident owns apartments, false otherwise
+     */
+    @Transactional
+    public boolean isResidentOwner(Long residentId) {
+        List<Apartment> ownedApartments = apartmentRepository.findAllByOwnerId(residentId);
+        return !ownedApartments.isEmpty();
+    }
+    
+    /**
+     * Get all apartments owned by a resident
+     * 
+     * @param residentId The ID of the resident
+     * @return List of apartments owned by the resident
+     */
+    @Transactional
+    public List<Apartment> getApartmentsOwnedByResident(Long residentId) {
+        return apartmentRepository.findAllByOwnerId(residentId);
     }
 }

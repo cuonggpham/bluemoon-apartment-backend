@@ -49,12 +49,8 @@ public class Apartment {
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
     private List<Vehicle> vehicleList;
 
-    /**
-     * Chuyển quan hệ owner từ One-to-One thành Many-to-One,
-     * cho phép một Resident sở hữu nhiều Apartment.
-     */
     @ManyToOne
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id")
     Resident owner;
 
     Long ownerPhone;
