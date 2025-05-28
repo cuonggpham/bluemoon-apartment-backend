@@ -3,6 +3,7 @@ package com.dev.tagashira.controller;
 import com.dev.tagashira.dto.request.ApartmentCreateRequest;
 import com.dev.tagashira.dto.request.ApartmentUpdateRequest;
 import com.dev.tagashira.dto.response.ApartmentResponse;
+import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.service.ApartmentService;
@@ -54,5 +55,11 @@ public class ApartmentController {
     public ResponseEntity<ApartmentResponse> updateOne(@PathVariable Long id, @RequestBody ApartmentUpdateRequest request){
         ApartmentResponse apartment =  apartmentService.update(id,request);
         return ResponseEntity.status(HttpStatus.OK).body(apartment);
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteApartment(@PathVariable Long id) throws Exception {
+        ApiResponse<String> response = apartmentService.deleteApartment(id);
+        return ResponseEntity.ok(response);
     }
 }
