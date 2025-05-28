@@ -14,10 +14,12 @@ import java.util.List;
 public class ApartmentCreateRequest {
     @NotNull
     Long addressNumber;
-    double area;
+
+    double area;    
+    
     String status;
-    @NotNull
-    Long ownerId;
+
+    Long ownerId;  // Removed @NotNull to allow null values
+
     Long ownerPhone;
-    List<Long> memberIds;
 }

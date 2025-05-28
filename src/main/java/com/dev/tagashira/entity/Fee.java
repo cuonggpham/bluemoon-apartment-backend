@@ -24,11 +24,17 @@ public class Fee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
+
+    @Column(nullable = false)
     String name;
+
     @Column(columnDefinition = "MEDIUMTEXT")
     private String description;
+
     @Enumerated(EnumType.STRING)
     FeeTypeEnum feeTypeEnum;
+
+    @Column(nullable = false)
     BigDecimal unitPrice;
 
     @JsonIgnore  //hide this field

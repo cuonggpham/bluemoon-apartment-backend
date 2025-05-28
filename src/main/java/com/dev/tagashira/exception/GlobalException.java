@@ -1,8 +1,8 @@
 package com.dev.tagashira.exception;
 
 
+import com.dev.tagashira.dto.response.ApiResponse;
 import com.google.api.client.auth.oauth2.TokenResponseException;
-import com.hththn.dev.department_manager.dto.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;

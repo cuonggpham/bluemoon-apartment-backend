@@ -8,12 +8,8 @@ import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.repository.ApartmentRepository;
 import com.dev.tagashira.repository.ResidentRepository;
-import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.NamedStoredProcedureQueries;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -35,24 +31,22 @@ import java.util.Optional;
 public class ApartmentService {
     ApartmentRepository apartmentRepository;
     ResidentRepository residentRepository;
-    ResidentService residentService;
-
+    ResidentService residentService;    
+    
     @Transactional
     public Apartment create(ApartmentCreateRequest request) {
         if (this.apartmentRepository.findById(request.getAddressNumber()).isPresent()) {
             throw new RuntimeException("Apartment with id = " + request.getAddressNumber() + " already exists");
         }
-        var owner = residentService.fetchResidentById(request.getOwnerId());
-
-        List<Resident> members = new ArrayList<>(residentRepository.findAllById(request.getMemberIds()));
-        members.add(owner);
-
-        // Handle for case: found members != input member ?
-        List<Long> foundMem = members.stream().map(Resident::getId).toList();
-        List<Long> notFoundMem = foundMem.stream().filter(id -> !foundMem.contains(id)).toList();
-
-        if(!notFoundMem.isEmpty())
-            throw new EntityNotFoundException("Not found members " + notFoundMem);
+        
+        Resident owner = null;
+        List<Resident> members = new ArrayList<>();
+        
+        // Handle optional owner
+        if (request.getOwnerId() != null) {
+            owner = residentService.fetchResidentById(request.getOwnerId());
+            members.add(owner);
+        }
 
         Apartment apartment = Apartment.builder()
                 .addressNumber(request.getAddressNumber())
@@ -64,14 +58,15 @@ public class ApartmentService {
                 .build();
 
         Apartment saved = apartmentRepository.save(apartment);
-        //Apartment test = apartmentRepository.findById(saved.getAddressNumber()).orElseThrow(() -> new RuntimeException("Failed to retrieve updated apartment"));
 
-        members.forEach(member -> {
-            member.setApartment(saved);
-            residentRepository.save(member);  // Sync changes for each member
-        });
+        // Only update member apartment if there are members
+        if (!members.isEmpty()) {
+            members.forEach(member -> {
+                member.setApartment(saved);
+                residentRepository.save(member);  // Sync changes for each member
+            });
+        }
 
-        // Fetch the apartment with updated relationships
         return saved;
     }
 
@@ -97,12 +92,17 @@ public class ApartmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Not found apartment " + addressID));
 
         List<Long> requestResidents = Optional.ofNullable(request.getResidents()).orElse(Collections.emptyList());
-        List<Resident> validResidents = residentRepository.findAllById(requestResidents);
-
-        // update owner + apartment status
+        List<Resident> validResidents = residentRepository.findAllById(requestResidents);        // update owner + apartment status
         if (request.getOwnerId() != null) {
             Resident newOwner = residentService.fetchResidentById(request.getOwnerId());
             Resident currentOwner = apartment.getOwner();
+            
+            // Check if the new owner is already an owner of another apartment
+            Optional<Apartment> existingApartmentWithOwner = apartmentRepository.findByOwnerId(request.getOwnerId());
+            if (existingApartmentWithOwner.isPresent() && !existingApartmentWithOwner.get().getAddressNumber().equals(addressID)) {
+                throw new RuntimeException("Resident with ID " + request.getOwnerId() + " is already an owner of another apartment");
+            }
+            
             validResidents.add(newOwner);
             if (currentOwner != null && !currentOwner.getId().equals(newOwner.getId())) {
                 currentOwner.setApartment(null); // Clear the current owner's apartment
@@ -112,6 +112,14 @@ public class ApartmentService {
             apartment.setOwner(newOwner);
             newOwner.setApartment(apartment);
             residentRepository.save(newOwner); // Sync changes for the new owner
+        } else {
+            // Handle case where ownerId is null (removing owner)
+            Resident currentOwner = apartment.getOwner();
+            if (currentOwner != null) {
+                currentOwner.setApartment(null);
+                residentRepository.save(currentOwner);
+                apartment.setOwner(null);
+            }
         }
         if(request.getStatus()!=null) apartment.setStatus(ApartmentEnum.valueOf(request.getStatus()));
         if(request.getArea() != null) apartment.setArea(request.getArea());

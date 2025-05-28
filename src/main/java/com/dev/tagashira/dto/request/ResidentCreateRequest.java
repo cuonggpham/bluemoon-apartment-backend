@@ -18,5 +18,5 @@ public class ResidentCreateRequest {
     GenderEnum gender;
     String cic;
     String status;
-    Long addressNumber;
+    Long apartmentId;
 }

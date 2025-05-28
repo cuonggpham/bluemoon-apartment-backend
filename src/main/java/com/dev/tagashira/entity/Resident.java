@@ -1,9 +1,5 @@
 package com.dev.tagashira.entity;
 
-import java.time.Instant;
-import java.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -14,6 +10,8 @@ import com.dev.tagashira.constant.ResidentEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "residents")
@@ -29,22 +27,25 @@ public class Resident {
 
     String name;
 
+    @JsonDeserialize(using = LocalDateDeserializer.class)
+    @JsonSerialize(using = LocalDateSerializer.class)
     LocalDate dob;
 
     GenderEnum gender;
 
     String cic;
 
-    @ManyToOne()
-    @JoinColumn(name = "addressNumber")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_number")
     @JsonIgnore
     Apartment apartment;
+
     @Enumerated(EnumType.STRING)
     ResidentEnum status;
     int isActive;
     LocalDate statusDate;
 
-    @Transient  // field used to compare with status, not saved into database
+    @Transient
     ResidentEnum previousStatus;
 
     @Transient
@@ -52,8 +53,8 @@ public class Resident {
 
     @PrePersist
     public void beforePersist() {
-            isActive = 1;
-            statusDate = LocalDate.now();
+        isActive = 1;
+        statusDate = LocalDate.now();
     }
 
     @PostLoad
@@ -64,13 +65,12 @@ public class Resident {
 
     @PreUpdate
     public void beforeUpdate() {
-        if (!status.equals(previousStatus)) {  // if status changed
-            this.statusDate = LocalDate.now();  // update statusDate
+        if (!status.equals(previousStatus)) {
+            this.statusDate = LocalDate.now();
         }
         this.previousStatus = this.status;
         if (this.isActive == 0) {
-            this.status = ResidentEnum.Moved; // soft delete
+            this.status = ResidentEnum.Moved;
         }
     }
-
 }

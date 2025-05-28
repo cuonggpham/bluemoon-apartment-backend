@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface ApartmentRepository extends JpaRepository<Apartment, Long>, JpaSpecificationExecutor<Apartment> {
     @EntityGraph(attributePaths = {"residentList", "owner"})
     Optional<Apartment> findById(Long addressNumber);
+    
+    Optional<Apartment> findByOwnerId(Long ownerId);
 }
