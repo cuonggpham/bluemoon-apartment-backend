@@ -38,7 +38,7 @@ public class UtilityBillController {
                                                 @RequestParam(value = "page", defaultValue = "1") int page,
                                                 @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        PaginatedResponse<UtilityBill> responses = this.utilityBillService.fetchUtilityBills(spec, pageable);
+        PaginatedResponse<UtilityBill> responses = utilityBillService.fetchUtilityBills(spec, pageable);
         return ResponseEntity.status(HttpStatus.OK).body(responses);
     }
 
