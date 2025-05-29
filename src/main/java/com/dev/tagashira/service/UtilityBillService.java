@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class UtilityBillService {
     UtilityBillRepository utilityBillRepository;
     ApartmentRepository apartmentRepository;
-    
+
     public List<UtilityBill> importExcel(MultipartFile file, String name) {
         String filename = file.getOriginalFilename();
         if (filename == null) {
