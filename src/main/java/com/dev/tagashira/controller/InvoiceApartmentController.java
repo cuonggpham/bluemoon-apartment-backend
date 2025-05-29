@@ -22,7 +22,7 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:5173")
 public class InvoiceApartmentController {
     InvoiceService invoiceService;
-    private final InvoiceApartmentRepository invoiceApartmentRepository;
+    InvoiceApartmentRepository invoiceApartmentRepository;
 
     @GetMapping("/{id}")
     public ResponseEntity<List<InvoiceApartmentResponse>> getAllInvoicesByApartmentId(@PathVariable("id") Long apartmentId) {

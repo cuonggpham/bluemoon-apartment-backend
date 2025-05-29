@@ -8,8 +8,9 @@ import com.dev.tagashira.entity.*;
 import com.dev.tagashira.exception.ApartmentNotFoundException;
 import com.dev.tagashira.exception.InvalidDataException;
 import com.dev.tagashira.exception.InvoiceNotFoundException;
-
+import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -68,9 +69,7 @@ public class InvoiceService {
                         .collect(Collectors.toList())
         );
         return page;
-    }    
-    
-    @Transactional
+    }    @Transactional
     public InvoiceResponse fetchInvoiceById(String id) {
         Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new InvoiceNotFoundException("Invoice with code = " + id + " is not found"));
         if (invoice.getIsActive() == 0) {
@@ -87,9 +86,7 @@ public class InvoiceService {
                 .lastUpdated(localDate)
                 .feeList(feeList)
                 .build();
-    }    
-    
-    public List<InvoiceApartmentResponse> fetchAllInvoicesByApartmentId(Long id) {
+    }    public List<InvoiceApartmentResponse> fetchAllInvoicesByApartmentId(Long id) {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new ApartmentNotFoundException("Not found apartment " + id));
         List<InvoiceApartmentResponse> invoiceApartmentResponseList = invoiceApartmentRepository.findInvoicesByApartmentId(id);
@@ -130,9 +127,7 @@ public class InvoiceService {
         });
 
         return invoiceApartmentResponseList;
-    }    
-    
-    @Transactional
+    }    @Transactional
     public List<InvoiceApartmentResponse> updateContributionFund(Long apartmentId, String invoiceId, Map<Long, Double> feeAmounts) {
         InvoiceApartment invoiceApartment = invoiceApartmentRepository.findByInvoiceIdAndApartmentAddressNumber(invoiceId, apartmentId);
         // Update the feeAmountMap field
@@ -143,41 +138,49 @@ public class InvoiceService {
         // Save the updated entity
         invoiceApartmentRepository.save(invoiceApartment);
         return fetchAllInvoicesByApartmentId(apartmentId);
-    }    
-    
-    @Transactional
+    }    @Transactional
     public InvoiceApartment updateInvoiceApartment(Long id) {
         InvoiceApartment invoiceApartment = invoiceApartmentRepository.findById(id)
                 .orElseThrow(() -> new InvoiceNotFoundException("Not found id " + id));
         invoiceApartment.setPaymentStatus(PaymentEnum.Paid);
         return invoiceApartmentRepository.save(invoiceApartment);
-    }    
-    
-    @Transactional
+    }    @Transactional
     public InvoiceResponse createInvoice(InvoiceRequest request) {
         Invoice invoice = new Invoice();
-        //Check if the invoice exists or not
-        if (invoiceRepository.findById(request.getInvoiceId()).isPresent()) {
-            Invoice response = invoiceRepository.findById(request.getInvoiceId()).get();
-            if(response.getIsActive()==1) throw new InvalidDataException("Invoice with id = " + request.getInvoiceId() + " is already actived");
-            else invoice.setIsActive(1);
+        
+        // Handle invoice ID - use provided ID or auto-generate
+        String invoiceId = request.getInvoiceId();
+        if (invoiceId == null || invoiceId.trim().isEmpty()) {
+            // Let @PrePersist generate the ID
+            invoiceId = null;
+        } else {
+            // Check if the provided invoice ID already exists
+            if (invoiceRepository.findById(invoiceId).isPresent()) {
+                Invoice existingInvoice = invoiceRepository.findById(invoiceId).get();
+                if(existingInvoice.getIsActive() == 1) {
+                    throw new InvalidDataException("Invoice with id = " + invoiceId + " is already active");
+                } else {
+                    invoice.setIsActive(1);
+                }
+            }
         }
-        // If it does not exist, create a new Invoice
-        invoice.setId(request.getInvoiceId());
+        
+        // Set invoice fields
+        invoice.setId(invoiceId); // Will be auto-generated in @PrePersist if null
         invoice.setName(request.getName());
         invoice.setDescription(request.getDescription());
-        invoiceRepository.save(invoice); //Must save here early to have information provided for side table 'fee_invoice'
+        invoiceRepository.save(invoice); // Must save here early to have information provided for side table 'fee_invoice'
 
         List<Fee> feeList = feeRepository.findAllById(request.getFeeIds()); //Get all feeIDs from the request and save it as a list
         for (Fee f : feeList) {
             FeeInvoice feeInvoice = new FeeInvoice();
             feeInvoice.setFee(f);
-            feeInvoice.setInvoice(invoiceRepository.findById(request.getInvoiceId()).orElse(null));
+            feeInvoice.setInvoice(invoiceRepository.findById(invoice.getId()).orElse(null));
             feeInvoiceRepository.save(feeInvoice);
-        }
-
+        }        
+        
         LocalDate localDate = Objects.requireNonNull(invoiceRepository.findById(invoice.getId()).orElse(null)).getUpdatedAt().atZone(ZoneId.systemDefault()).toLocalDate();
-        List<Fee> feeListAfterCreate = feeInvoiceRepository.findFeesByInvoiceId(request.getInvoiceId());
+        List<Fee> feeListAfterCreate = feeInvoiceRepository.findFeesByInvoiceId(invoice.getId());
 
         List<Apartment> apartmentList = apartmentRepository.findAll();
         for (Apartment a : apartmentList) {
@@ -271,9 +274,7 @@ public class InvoiceService {
                 .lastUpdated(localDate)
                 .feeList(feeListAfterUpdate)
                 .build();
-    }    
-    
-    public ApiResponse<String> deleteInvoice(String id) {
+    }    public ApiResponse<String> deleteInvoice(String id) {
         Invoice invoice = invoiceRepository.findById(id).orElseThrow(() -> new InvoiceNotFoundException("Invoice with code = " + id + " is not found"));
         //Delete all record by invoiceId in fee_invoice table
         feeInvoiceRepository.deleteByInvoiceId(id);

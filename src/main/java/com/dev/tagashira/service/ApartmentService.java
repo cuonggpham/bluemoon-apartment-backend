@@ -10,6 +10,7 @@ import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.InvalidDataException;
 import com.dev.tagashira.repository.ApartmentRepository;
 import com.dev.tagashira.repository.ResidentRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -92,9 +93,7 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Can not find apartment with address: " + id));
         return apartmentConverter.toResponse(apartment);
-    }    
-    
-    // Internal method for other services to fetch entity
+    }    // Internal method for other services to fetch entity
     public Apartment fetchApartmentEntityById(Long id) {
         return apartmentRepository.findById(id)
                 .orElseThrow(() -> new ApartmentNotFoundException("Cannot find apartment with id: " + id));
@@ -152,8 +151,7 @@ public class ApartmentService {
 
         return apartmentConverter.toResponse(savedApartment);
     }
-      
-    @Transactional
+      @Transactional
     public ApiResponse<String> deleteApartment(Long id) {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + id + " not found"));

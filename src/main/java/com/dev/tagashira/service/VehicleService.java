@@ -29,9 +29,7 @@ import java.util.List;
 public class VehicleService {
     VehicleRepository vehicleRepository;
     ApartmentRepository apartmentRepository;
-    VehicleConverter vehicleConverter;    
-    
-    @Transactional
+    VehicleConverter vehicleConverter;    @Transactional
     public List<VehicleResponse> findAllByApartmentId(long apartmentId) {
         if (!this.apartmentRepository.existsById(apartmentId)) {
             throw new ApartmentNotFoundException("Apartment with id " + apartmentId + " does not exist");
@@ -52,8 +50,8 @@ public class VehicleService {
                 .totalElements(pageVehicle.getNumberOfElements())
                 .result(vehicleResponses)                
                 .build();
-    }    
-    
+    }
+
     @Transactional
     public VehicleResponse create(Vehicle vehicleRequest) {
         if (this.vehicleRepository.findById(vehicleRequest.getId()).isPresent()) {
@@ -68,8 +66,8 @@ public class VehicleService {
         vehicle.setApartment(this.apartmentRepository.findById(vehicleRequest.getApartmentId()).orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + vehicleRequest.getApartmentId() + " does not exist")));
         Vehicle savedVehicle = this.vehicleRepository.save(vehicle);
         return vehicleConverter.toResponse(savedVehicle);
-    }    
-    
+    }
+
     @Transactional
     public ApiResponse<String> deleteVehicle(Long id, Vehicle vehicleRequest) {
         Apartment apartment = this.apartmentRepository.findById(id).orElseThrow(() -> new ApartmentNotFoundException("Apartment with id " + id + " does not exist"));
@@ -85,8 +83,8 @@ public class VehicleService {
         response.setMessage("delete vehicle success");
         response.setData(null);
         return response;
-    }    
-    
+    }
+
     @Transactional
     public VehicleResponse update(String id, Vehicle vehicleRequest) {
         Vehicle vehicle = this.vehicleRepository.findById(id)

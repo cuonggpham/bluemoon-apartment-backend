@@ -14,7 +14,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 public class InvoiceRequest {
-    @NotNull
     String invoiceId;
     String name;
     @Column(columnDefinition = "MEDIUMTEXT")

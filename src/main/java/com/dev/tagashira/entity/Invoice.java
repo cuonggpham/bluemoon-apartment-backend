@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Entity
@@ -38,13 +39,22 @@ public class Invoice {
 
     int isActive;
     Instant updatedAt;
-    LocalDate createdAt;
-
-    @PrePersist
+    LocalDate createdAt;    @PrePersist
     public void beforeCreate() {
+        if (this.id == null || this.id.trim().isEmpty()) {
+            this.id = generateInvoiceId();
+        }
         this.isActive = 1;
         this.updatedAt = Instant.now();
         this.createdAt = LocalDate.now();
+    }
+    
+    private String generateInvoiceId() {
+        // Tạo mã theo format: INV-YYYY-MM-DDDD
+        String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        // Tạo số sequence đơn giản dựa trên timestamp
+        long sequence = System.currentTimeMillis() % 10000; // Lấy 4 chữ số cuối của timestamp
+        return "INV-" + datePrefix + "-" + String.format("%04d", sequence);
     }
 
     @PreUpdate

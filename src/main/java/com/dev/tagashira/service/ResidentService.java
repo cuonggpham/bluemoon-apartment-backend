@@ -68,8 +68,7 @@ public class ResidentService {
         page.setResult(residentConverter.toResponseList(pageResident.getContent()));
         return page;
     }    
-      
-    @Transactional
+      @Transactional
     public ResidentResponse fetchResidentById(Long id) {
         Resident resident = this.residentRepository.findById(id)
                 .orElseThrow(()-> new ResidentNotFoundException("Resident with id = "+id+ " is not found"));
@@ -81,8 +80,7 @@ public class ResidentService {
         return this.residentRepository.findById(id)
                 .orElseThrow(()-> new ResidentNotFoundException("Resident with id = "+id+ " is not found"));
     }
-        
-    @Transactional
+        @Transactional
     public ResidentResponse createResident(ResidentCreateRequest residentCreate) {
         if (this.residentRepository.findById(residentCreate.getId()).isPresent()) {
             throw new InvalidDataException("Resident with id = " + residentCreate.getId() + " already exists");

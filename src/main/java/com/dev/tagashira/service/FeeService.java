@@ -4,8 +4,10 @@ import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Fee;
+import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.exception.FeeNotFoundException;
-
+import com.dev.tagashira.exception.InvalidDataException;
+import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.FeeRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,9 +32,7 @@ public class FeeService {
         page.setTotalElements(pageFee.getNumberOfElements());
         page.setResult(pageFee.getContent());
         return page;
-    }    
-    
-    public Fee fetchFeeById (Long id) {
+    }    public Fee fetchFeeById (Long id) {
         return feeRepository.findById(id).orElseThrow(() -> new FeeNotFoundException("Fee with code = " + id + " is not found"));
     }
 
