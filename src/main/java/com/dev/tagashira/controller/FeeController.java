@@ -4,7 +4,6 @@ import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Fee;
-import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.service.FeeService;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;

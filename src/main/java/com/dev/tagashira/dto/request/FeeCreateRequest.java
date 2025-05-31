@@ -19,4 +19,5 @@ public class FeeCreateRequest {
     String description;
     FeeTypeEnum feeTypeEnum;
     BigDecimal unitPrice;
+    Long apartmentId;
 }

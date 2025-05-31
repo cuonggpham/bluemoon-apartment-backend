@@ -55,10 +55,6 @@ public class Apartment {
 
     Long ownerPhone;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
-    List<InvoiceApartment> invoiceApartments;
-
     @Transient
     Integer numberOfMembers;
 

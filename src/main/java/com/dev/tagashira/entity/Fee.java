@@ -23,8 +23,8 @@ import static jakarta.persistence.FetchType.LAZY;
 public class Fee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-
+    Long id;    
+    
     @Column(nullable = false)
     String name;
 
@@ -37,9 +37,8 @@ public class Fee {
     @Column(nullable = false)
     BigDecimal unitPrice;
 
-    @JsonIgnore  //hide this field
-    @OneToMany(mappedBy = "fee", cascade = CascadeType.ALL) //cascade: used for auto updating at fees and invoices table
-    List<FeeInvoice> feeInvoices;
+    @Column(nullable = true)
+    Long apartmentId; // Apartment this fee applies to
 
     LocalDate createdAt;
     LocalDate updatedAt;

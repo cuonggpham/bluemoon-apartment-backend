@@ -1,8 +1,6 @@
 package com.dev.tagashira.controller;
 
-import com.dev.tagashira.dto.response.InvoiceResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
-import com.dev.tagashira.entity.InvoiceApartment;
 import com.dev.tagashira.entity.Resident;
 import com.dev.tagashira.entity.UtilityBill;
 import com.dev.tagashira.service.UtilityBillService;

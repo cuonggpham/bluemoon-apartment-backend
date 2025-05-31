@@ -25,7 +25,6 @@ public class GlobalException {
             ResidentNotFoundException.class,
             VehicleNotFoundException.class,
             FeeNotFoundException.class,
-            InvoiceNotFoundException.class,
             UtilityBillNotFoundException.class,
             EntityNotFoundException.class
     })

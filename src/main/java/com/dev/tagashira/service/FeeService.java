@@ -4,10 +4,8 @@ import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Fee;
-import com.dev.tagashira.entity.Resident;
+import com.dev.tagashira.constant.FeeTypeEnum;
 import com.dev.tagashira.exception.FeeNotFoundException;
-import com.dev.tagashira.exception.InvalidDataException;
-import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.FeeRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,7 +14,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.math.BigDecimal;
 
 @Service
 @AllArgsConstructor
@@ -34,17 +32,19 @@ public class FeeService {
         return page;
     }    public Fee fetchFeeById (Long id) {
         return feeRepository.findById(id).orElseThrow(() -> new FeeNotFoundException("Fee with code = " + id + " is not found"));
-    }
-
+    }    
+    
     public Fee createFee (FeeCreateRequest feeCreateRequest) {
         Fee fee = new Fee();
         fee.setName(feeCreateRequest.getName());
         fee.setDescription(feeCreateRequest.getDescription());
         fee.setFeeTypeEnum(feeCreateRequest.getFeeTypeEnum());
         fee.setUnitPrice(feeCreateRequest.getUnitPrice());
-        return this.feeRepository.save(fee);
-    }
+        fee.setApartmentId(feeCreateRequest.getApartmentId());
 
+        return feeRepository.save(fee);
+    }    
+    
     public Fee updateFee (Fee fee) {
         Fee oldFee = this.fetchFeeById(fee.getId());
         if(oldFee != null) {
@@ -52,6 +52,7 @@ public class FeeService {
             if(fee.getDescription() != null) oldFee.setDescription(fee.getDescription());
             if(fee.getFeeTypeEnum() != null) oldFee.setFeeTypeEnum(fee.getFeeTypeEnum());
             if(fee.getUnitPrice() != null) oldFee.setUnitPrice(fee.getUnitPrice());
+            if(fee.getApartmentId() != null) oldFee.setApartmentId(fee.getApartmentId());
         } else {
             throw new FeeNotFoundException("Fee with code = " + fee.getId() + " is not found");
         }
