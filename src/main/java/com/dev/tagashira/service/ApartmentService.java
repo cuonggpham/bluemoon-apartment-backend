@@ -25,11 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -106,7 +102,7 @@ public class ApartmentService {
 
         List<Long> requestResidents = Optional.ofNullable(request.getResidents())
                 .orElse(Collections.emptyList());
-        List<Resident> validResidents = residentRepository.findAllById(requestResidents);
+        List<Resident> validResidents = new ArrayList<>(residentRepository.findAllById(requestResidents));
 
         // Update owner
         if (request.getOwnerId() != null) {
