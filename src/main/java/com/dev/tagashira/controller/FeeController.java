@@ -6,7 +6,6 @@ import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.FeeResponse;
 import com.dev.tagashira.entity.Fee;
 import com.dev.tagashira.constant.FeeTypeEnum;
-import com.dev.tagashira.constant.VehicleEnum;
 import com.dev.tagashira.service.FeeService;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
@@ -73,9 +72,10 @@ public class FeeController {
     public ResponseEntity<List<Fee>> generateMonthlyFees(
             @RequestParam FeeTypeEnum feeType,
             @RequestParam String billingMonth, // Format: YYYY-MM
-            @RequestParam(required = false) BigDecimal unitPricePerSqm) {
+            @RequestParam(required = false) BigDecimal unitPricePerSqm,
+            @RequestParam(required = false) String customFeeName) {
         
-        List<Fee> generatedFees = feeService.generateMonthlyFeesForAllApartments(feeType, billingMonth, unitPricePerSqm);
+        List<Fee> generatedFees = feeService.generateMonthlyFeesForAllApartments(feeType, billingMonth, unitPricePerSqm, customFeeName);
         return ResponseEntity.ok(generatedFees);
     }
     
