@@ -12,6 +12,7 @@ import java.time.Instant;
 @Table(name = "payment_record")
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)

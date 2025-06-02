@@ -4,8 +4,10 @@ import com.dev.tagashira.converter.VehicleConverter;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.VehicleResponse;
+import com.dev.tagashira.dto.response.VehicleCountSummary;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Vehicle;
+import com.dev.tagashira.constant.VehicleEnum;
 import com.dev.tagashira.exception.ApartmentNotFoundException;
 import com.dev.tagashira.exception.InvalidDataException;
 import com.dev.tagashira.exception.VehicleNotFoundException;
@@ -29,7 +31,9 @@ import java.util.List;
 public class VehicleService {
     VehicleRepository vehicleRepository;
     ApartmentRepository apartmentRepository;
-    VehicleConverter vehicleConverter;    @Transactional
+    VehicleConverter vehicleConverter;
+    
+    @Transactional
     public List<VehicleResponse> findAllByApartmentId(long apartmentId) {
         if (!this.apartmentRepository.existsById(apartmentId)) {
             throw new ApartmentNotFoundException("Apartment with id " + apartmentId + " does not exist");
@@ -103,5 +107,47 @@ public class VehicleService {
         }
         Vehicle savedVehicle = this.vehicleRepository.save(vehicle);
         return vehicleConverter.toResponse(savedVehicle);
+    }
+
+    /**
+     * Get vehicle count summary for an apartment (for fee calculation)
+     */
+    @Transactional
+    public VehicleCountSummary getVehicleCountSummary(Long apartmentId) {
+        if (!this.apartmentRepository.existsById(apartmentId)) {
+            throw new ApartmentNotFoundException("Apartment with id " + apartmentId + " does not exist");
+        }
+        
+        List<Object[]> results = vehicleRepository.countVehiclesByTypeForApartment(apartmentId);
+        
+        VehicleCountSummary summary = new VehicleCountSummary();
+        summary.setApartmentId(apartmentId);
+        summary.setBicycleCount(0L);
+        summary.setMotorbikeCount(0L);
+        summary.setCarCount(0L);
+        
+        for (Object[] result : results) {
+            VehicleEnum vehicleType = (VehicleEnum) result[0];
+            Long count = (Long) result[1];
+            
+            switch (vehicleType) {
+                case Motorbike -> summary.setMotorbikeCount(count);
+                case Car -> summary.setCarCount(count);
+            }
+        }
+        
+        return summary;
+    }
+    
+    /**
+     * Get vehicle count for specific type and apartment
+     */
+    @Transactional
+    public Long getVehicleCountByType(Long apartmentId, VehicleEnum vehicleType) {
+        if (!this.apartmentRepository.existsById(apartmentId)) {
+            throw new ApartmentNotFoundException("Apartment with id " + apartmentId + " does not exist");
+        }
+        
+        return vehicleRepository.countByApartmentAndVehicleType(apartmentId, vehicleType);
     }
 }

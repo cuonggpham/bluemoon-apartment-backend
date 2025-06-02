@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class PaymentRecordService {
     private final ResidentRepository residentRepository;
     private final FeeRepository feeRepository;
     private final ApartmentRepository apartmentRepository;
+    private final FeeService feeService;
     
     @Transactional
     public PaymentRecordResponse createPaymentRecord(PaymentRecordRequest request) {
@@ -46,7 +49,7 @@ public class PaymentRecordService {
         Long apartmentId;
         
         // Handle apartment logic based on fee type
-        if (feeEntity.getFeeTypeEnum() == FeeTypeEnum.Mandatory) {
+        if (feeEntity.isMandatory()) {
             // For mandatory fees, use apartmentId from fee (must be set)
             if (feeEntity.getApartmentId() == null) {
                 throw new RuntimeException("Mandatory fee must have an associated apartment");
@@ -84,6 +87,11 @@ public class PaymentRecordService {
         
         PaymentRecord savedRecord = paymentRecordRepository.save(paymentRecord);
         
+        // If this is a recurring fee (monthly fee), deactivate it after payment
+        if (feeEntity.getIsRecurring()) {
+            feeService.deactivateFee(request.getFeeId());
+        }
+        
         return mapToResponse(savedRecord, payer.get(), feeEntity, apartment.get());
     }
     
@@ -120,6 +128,38 @@ public class PaymentRecordService {
         return records.stream()
             .map(PaymentRecord::getAmount)
             .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+    }
+    
+    /**
+     * Lấy tất cả payments của Monthly Fees (recurring fees)
+     */
+    public List<PaymentRecordResponse> getRecurringFeePayments() {
+        List<PaymentRecord> records = paymentRecordRepository.findAllOrderByPaymentDateDesc();
+        
+        return records.stream()
+            .map(this::mapToResponseWithLookup)
+            .filter(response -> {
+                // Filter only recurring fee payments
+                Optional<Fee> fee = feeRepository.findById(response.getFeeId());
+                return fee.isPresent() && fee.get().getIsRecurring();
+            })
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy payments của Monthly Fees theo apartment
+     */
+    public List<PaymentRecordResponse> getRecurringFeePaymentsByApartment(Long apartmentId) {
+        List<PaymentRecord> records = paymentRecordRepository.findByApartmentId(apartmentId);
+        
+        return records.stream()
+            .map(this::mapToResponseWithLookup)
+            .filter(response -> {
+                // Filter only recurring fee payments
+                Optional<Fee> fee = feeRepository.findById(response.getFeeId());
+                return fee.isPresent() && fee.get().getIsRecurring();
+            })
+            .collect(Collectors.toList());
     }
     
     private PaymentRecordResponse mapToResponse(PaymentRecord record, Resident payer, Fee fee, Apartment apartment) {

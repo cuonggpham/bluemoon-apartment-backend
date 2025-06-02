@@ -18,6 +18,8 @@ public class FeeCreateRequest {
     String name;
     String description;
     FeeTypeEnum feeTypeEnum;
+    BigDecimal amount;
     BigDecimal unitPrice;
     Long apartmentId;
+    Boolean isRecurring;
 }
