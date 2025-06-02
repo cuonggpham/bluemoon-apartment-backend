@@ -82,15 +82,9 @@ public class Fee {
     @JsonIgnore
     public boolean isMandatory() {
         Set<FeeTypeEnum> mandatoryTypes = Set.of(
-            FeeTypeEnum.MANDATORY_GENERAL,
+            FeeTypeEnum.MANDATORY,
             FeeTypeEnum.VEHICLE_PARKING,
-            FeeTypeEnum.FLOOR_AREA,
-            FeeTypeEnum.MANAGEMENT_FEE,
-            FeeTypeEnum.MAINTENANCE_FEE,
-            FeeTypeEnum.SECURITY_FEE,
-            FeeTypeEnum.CLEANING_FEE,
-            FeeTypeEnum.WATER_FEE,
-            FeeTypeEnum.ELECTRICITY_FEE
+            FeeTypeEnum.FLOOR_AREA
         );
         return mandatoryTypes.contains(this.feeTypeEnum);
     }
@@ -100,7 +94,7 @@ public class Fee {
      */
     @JsonIgnore
     public boolean isVoluntary() {
-        return !isMandatory();
+        return this.feeTypeEnum == FeeTypeEnum.VOLUNTARY;
     }
     
     /**
@@ -110,9 +104,7 @@ public class Fee {
     public boolean isPerUnitFee() {
         Set<FeeTypeEnum> perUnitTypes = Set.of(
             FeeTypeEnum.VEHICLE_PARKING,  // per vehicle
-            FeeTypeEnum.FLOOR_AREA,       // per m²
-            FeeTypeEnum.WATER_FEE,        // per m³
-            FeeTypeEnum.ELECTRICITY_FEE   // per kWh
+            FeeTypeEnum.FLOOR_AREA        // per m²
         );
         return perUnitTypes.contains(this.feeTypeEnum);
     }
@@ -124,11 +116,7 @@ public class Fee {
     public boolean isMonthlyFee() {
         Set<FeeTypeEnum> monthlyTypes = Set.of(
             FeeTypeEnum.VEHICLE_PARKING,
-            FeeTypeEnum.FLOOR_AREA,
-            FeeTypeEnum.MANAGEMENT_FEE,
-            FeeTypeEnum.MAINTENANCE_FEE,
-            FeeTypeEnum.SECURITY_FEE,
-            FeeTypeEnum.CLEANING_FEE
+            FeeTypeEnum.FLOOR_AREA
         );
         return monthlyTypes.contains(this.feeTypeEnum);
     }
@@ -141,9 +129,6 @@ public class Fee {
         return switch (this.feeTypeEnum) {
             case VEHICLE_PARKING -> "xe";
             case FLOOR_AREA -> "m²";
-            case WATER_FEE -> "m³";
-            case ELECTRICITY_FEE -> "kWh";
-            case INTERNET_FEE -> "tháng";
             default -> "đơn vị";
         };
     }

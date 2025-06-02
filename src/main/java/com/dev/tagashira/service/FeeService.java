@@ -117,12 +117,12 @@ public class FeeService {
      */
     @Transactional
     public List<Fee> generateMonthlyFeesForAllApartments(FeeTypeEnum feeType, String billingMonth, 
-                                                        BigDecimal unitPricePerSqm) {
+                                                        BigDecimal unitPricePerSqm, String customFeeName) {
         List<Apartment> apartments = apartmentRepository.findAll();
         List<Fee> generatedFees = new ArrayList<>();
         
         for (Apartment apartment : apartments) {
-            Fee fee = generateMonthlyFeeForApartment(apartment, feeType, billingMonth, unitPricePerSqm);
+            Fee fee = generateMonthlyFeeForApartment(apartment, feeType, billingMonth, unitPricePerSqm, customFeeName);
             if (fee != null) {
                 generatedFees.add(fee);
             }
@@ -136,12 +136,15 @@ public class FeeService {
      */
     @Transactional
     public Fee generateMonthlyFeeForApartment(Apartment apartment, FeeTypeEnum feeType, 
-                                            String billingMonth, BigDecimal unitPricePerSqm) {
+                                            String billingMonth, BigDecimal unitPricePerSqm, String customFeeName) {
         
-        // Kiểm tra đã tạo phí cho apartment này trong tháng này chưa
-        String feeName = generateFeeName(feeType, billingMonth);
+        // Tạo tên phí
+        String feeName = generateFeeName(feeType, billingMonth, customFeeName);
+        
+        // Kiểm tra đã tạo phí với tên này cho apartment này trong tháng này chưa
+        // Đối với FLOOR_AREA, cho phép nhiều loại phí khác nhau trong cùng tháng
         if (feeRepository.findByNameAndApartmentId(feeName, apartment.getAddressNumber()).isPresent()) {
-            throw new RuntimeException("Fee already exists for apartment " + apartment.getAddressNumber() + " in " + billingMonth);
+            throw new RuntimeException("Fee '" + feeName + "' already exists for apartment " + apartment.getAddressNumber() + " in " + billingMonth);
         }
         
         BigDecimal calculatedAmount;
@@ -184,8 +187,14 @@ public class FeeService {
                 BigDecimal apartmentArea = BigDecimal.valueOf(apartment.getArea());
                 calculatedAmount = unitPricePerSqm.multiply(apartmentArea);
                 unitPrice = unitPricePerSqm; // Store unit price for reference
-                description = String.format("Phí diện tích sàn tháng %s: %.2f m² x %s VNĐ/m² = %s VNĐ", 
-                    billingMonth, apartmentArea.doubleValue(), unitPricePerSqm, calculatedAmount);
+                
+                // Use custom fee name in description if provided
+                String feeDisplayName = customFeeName != null && !customFeeName.trim().isEmpty() 
+                    ? customFeeName 
+                    : "Phí diện tích sàn";
+                
+                description = String.format("%s tháng %s: %.2f m² x %s VNĐ/m² = %s VNĐ", 
+                    feeDisplayName, billingMonth, apartmentArea.doubleValue(), unitPricePerSqm, calculatedAmount);
             }
             default -> throw new IllegalArgumentException("Unsupported monthly fee type: " + feeType);
         }
@@ -271,15 +280,18 @@ public class FeeService {
             .createdAt(originalFee.getCreatedAt());
     }
     
-    private String generateFeeName(FeeTypeEnum feeType, String billingMonth) {
+    private String generateFeeName(FeeTypeEnum feeType, String billingMonth, String customFeeName) {
         return switch (feeType) {
             case VEHICLE_PARKING -> "Phí gửi xe tháng " + billingMonth;
-            case FLOOR_AREA -> "Phí diện tích sàn tháng " + billingMonth;
-            case MANAGEMENT_FEE -> "Phí quản lý tháng " + billingMonth;
-            case MAINTENANCE_FEE -> "Phí bảo trì tháng " + billingMonth;
-            case SECURITY_FEE -> "Phí bảo vệ tháng " + billingMonth;
-            case CLEANING_FEE -> "Phí vệ sinh tháng " + billingMonth;
-            default -> feeType.name() + " tháng " + billingMonth;
+            case FLOOR_AREA -> {
+                // Use custom name if provided, otherwise use default
+                String baseName = customFeeName != null && !customFeeName.trim().isEmpty() 
+                    ? customFeeName 
+                    : "Phí diện tích sàn";
+                yield baseName + " tháng " + billingMonth;
+            }
+            case MANDATORY -> "Phí bắt buộc " + billingMonth;
+            case VOLUNTARY -> "Phí tự nguyện " + billingMonth;
         };
     }
     
