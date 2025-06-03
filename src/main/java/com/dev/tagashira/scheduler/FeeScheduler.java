@@ -2,7 +2,7 @@ package com.dev.tagashira.scheduler;
 
 import com.dev.tagashira.constant.FeeTypeEnum;
 import com.dev.tagashira.entity.FloorAreaFeeConfig;
-import com.dev.tagashira.service.FeeService;
+import com.dev.tagashira.service.MonthlyFeeGeneratorService;
 import com.dev.tagashira.service.FloorAreaFeeConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +11,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public class FeeScheduler {
     
-    private final FeeService feeService;
+    private final MonthlyFeeGeneratorService monthlyFeeGeneratorService;
     private final FloorAreaFeeConfigService floorAreaFeeConfigService;
     
     /**
@@ -40,11 +40,11 @@ public class FeeScheduler {
     public void generateMonthlyVehicleParkingFees() {
         try {
             LocalDate now = LocalDate.now();
-            String billingMonth = now.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            YearMonth billingMonth = YearMonth.from(now);
             
             log.info("Starting automatic generation of vehicle parking fees for month: {}", billingMonth);
             
-            var generatedFees = feeService.generateMonthlyFeesForAllApartments(
+            var generatedFees = monthlyFeeGeneratorService.generateForAll(
                 FeeTypeEnum.VEHICLE_PARKING, 
                 billingMonth, 
                 null,
@@ -79,7 +79,7 @@ public class FeeScheduler {
                 .getConfigsScheduledAt(currentDay, currentHour, roundedMinute);
             
             if (!scheduledConfigs.isEmpty()) {
-                String billingMonth = today.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+                YearMonth billingMonth = YearMonth.from(today);
                 log.info("Found {} scheduled floor area fee configs for {}:{}:{} on day {}", 
                     scheduledConfigs.size(), currentHour, roundedMinute, 0, currentDay);
                 
@@ -98,12 +98,12 @@ public class FeeScheduler {
     /**
      * Generate floor area fees from specific config
      */
-    private void generateFloorAreaFeesFromConfig(FloorAreaFeeConfig config, String billingMonth) {
+    private void generateFloorAreaFeesFromConfig(FloorAreaFeeConfig config, YearMonth billingMonth) {
         try {
             log.info("Generating {} for month {} with unit price {} VNĐ/m²", 
                 config.getFeeName(), billingMonth, config.getUnitPricePerSqm());
             
-            var generatedFees = feeService.generateMonthlyFeesForAllApartments(
+            var generatedFees = monthlyFeeGeneratorService.generateForAll(
                 config.getFeeTypeEnum(),
                 billingMonth, 
                 config.getUnitPricePerSqm(),
@@ -127,7 +127,7 @@ public class FeeScheduler {
     public void generateAllActiveFloorAreaFees() {
         try {
             LocalDate now = LocalDate.now();
-            String billingMonth = now.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            YearMonth billingMonth = YearMonth.from(now);
             
             log.info("Starting manual generation of all active floor area fees for month: {}", billingMonth);
             
@@ -161,7 +161,7 @@ public class FeeScheduler {
             log.info("Daily health check - Current month: {}", currentMonth);
             
             // Kiểm tra xem đã tạo phí cho tháng hiện tại chưa
-            var vehicleFees = feeService.getMonthlyFeesByMonth(currentMonth);
+            var vehicleFees = monthlyFeeGeneratorService.getMonthlyFeesByMonth(currentMonth);
             
             if (vehicleFees.isEmpty() && now.getDayOfMonth() > 1) {
                 log.warn("No monthly fees found for current month: {}. Manual intervention may be required.", currentMonth);

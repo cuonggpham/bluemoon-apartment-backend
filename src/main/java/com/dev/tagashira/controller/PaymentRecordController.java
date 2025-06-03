@@ -1,10 +1,10 @@
 package com.dev.tagashira.controller;
 
 import com.dev.tagashira.dto.request.PaymentRecordRequest;
+import com.dev.tagashira.dto.response.FeeResponse;
 import com.dev.tagashira.dto.response.PaymentRecordResponse;
 import com.dev.tagashira.service.PaymentRecordService;
-import com.dev.tagashira.service.FeeService;
-import com.dev.tagashira.entity.Fee;
+import com.dev.tagashira.service.FeeCrudService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,7 @@ import java.util.List;
 public class PaymentRecordController {
     
     private final PaymentRecordService paymentRecordService;
-    private final FeeService feeService;
+    private final FeeCrudService feeCrudService;
     
     @PostMapping
     public ResponseEntity<PaymentRecordResponse> createPaymentRecord(@RequestBody PaymentRecordRequest request) {
@@ -67,7 +67,7 @@ public class PaymentRecordController {
             @RequestParam Long feeId) {
         
         // Get fee details to create proper payment request
-        Fee fee = feeService.fetchFeeById(feeId);
+        FeeResponse fee = feeCrudService.findById(feeId);
         
         // Create payment request using the unified method
         PaymentRecordRequest request = new PaymentRecordRequest();

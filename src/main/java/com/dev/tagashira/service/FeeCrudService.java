@@ -1,0 +1,121 @@
+package com.dev.tagashira.service;
+
+import com.dev.tagashira.dto.request.FeeCreateRequest;
+import com.dev.tagashira.dto.response.ApiResponse;
+import com.dev.tagashira.dto.response.FeeResponse;
+import com.dev.tagashira.dto.response.PaginatedResponse;
+import com.dev.tagashira.entity.Fee;
+import com.dev.tagashira.exception.FeeNotFoundException;
+import com.dev.tagashira.repository.FeeRepository;
+import com.dev.tagashira.converter.FeeConverter;
+import com.dev.tagashira.service.factory.FeeBuilderFactory;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * CRUD thuần cho Fee – KHÔNG chứa logic tính tiền theo tháng.
+ */
+@Service
+@RequiredArgsConstructor
+public class FeeCrudService {
+
+    private final FeeRepository feeRepository;
+    private final FeeConverter feeConverter;
+    private final FeeBuilderFactory feeBuilderFactory;
+
+    public PaginatedResponse<FeeResponse> findAll(Specification<Fee> spec, Pageable pageable) {
+        Page<Fee> page = feeRepository.findAll(spec, pageable);
+
+        PaginatedResponse<FeeResponse> result = new PaginatedResponse<>();
+        result.setCurPage(pageable.getPageNumber());
+        result.setPageSize(pageable.getPageSize());
+        result.setTotalPages(page.getTotalPages());
+        result.setTotalElements(page.getNumberOfElements());
+        result.setResult(feeConverter.toResponseList(page.getContent()));
+        return result;
+    }
+
+    public List<FeeResponse> findAll(Specification<Fee> spec) {
+        return feeConverter.toResponseList(feeRepository.findAll(spec));
+    }
+
+    public FeeResponse findById(Long id) {
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new FeeNotFoundException("Fee " + id + " not found"));
+        return feeConverter.toResponse(fee);
+    }
+
+    @Transactional
+    public FeeResponse create(FeeCreateRequest req) {
+        Fee.FeeBuilder builder = feeBuilderFactory.base()
+                .name(req.getName())
+                .description(req.getDescription())
+                .feeTypeEnum(req.getFeeTypeEnum())
+                .amount(req.getAmount())
+                .unitPrice(req.getUnitPrice())
+                .apartmentId(req.getApartmentId())
+                .isRecurring(Boolean.TRUE.equals(req.getIsRecurring()));
+
+        Fee saved = feeRepository.save(builder.build());
+        return feeConverter.toResponse(saved);
+    }
+
+    @Transactional
+    public FeeResponse update(Fee updatePayload) {
+        Fee existing = feeRepository.findById(updatePayload.getId())
+                .orElseThrow(() -> new FeeNotFoundException("Fee " + updatePayload.getId() + " not found"));
+
+        Fee updated = feeBuilderFactory.from(existing)
+                .name(nvl(updatePayload.getName(), existing.getName()))
+                .description(nvl(updatePayload.getDescription(), existing.getDescription()))
+                .feeTypeEnum(nvl(updatePayload.getFeeTypeEnum(), existing.getFeeTypeEnum()))
+                .amount(nvl(updatePayload.getAmount(), existing.getAmount()))
+                .unitPrice(nvl(updatePayload.getUnitPrice(), existing.getUnitPrice()))
+                .apartmentId(nvl(updatePayload.getApartmentId(), existing.getApartmentId()))
+                .isRecurring(nvl(updatePayload.getIsRecurring(), existing.getIsRecurring()))
+                .isActive(nvl(updatePayload.getIsActive(), existing.getIsActive()))
+                .effectiveFrom(nvl(updatePayload.getEffectiveFrom(), existing.getEffectiveFrom()))
+                .effectiveTo(nvl(updatePayload.getEffectiveTo(), existing.getEffectiveTo()))
+                .updatedAt(LocalDate.now())
+                .build();
+
+        return feeConverter.toResponse(feeRepository.save(updated));
+    }
+
+    @Transactional
+    public ApiResponse<String> delete(Long id) {
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new FeeNotFoundException("Fee " + id + " not found"));
+        feeRepository.delete(fee);
+
+        ApiResponse<String> res = new ApiResponse<>();
+        res.setCode(HttpStatus.OK.value());
+        res.setMessage("Delete fee success");
+        return res;
+    }
+
+    @Transactional
+    public void deactivate(Long id) {
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new FeeNotFoundException("Fee " + id + " not found"));
+
+        Fee deactivated = feeBuilderFactory.from(fee)
+                .isActive(false)
+                .effectiveTo(LocalDate.now())
+                .updatedAt(LocalDate.now())
+                .build();
+        feeRepository.save(deactivated);
+    }
+
+    private static <T> T nvl(T value, T fallback) {
+        return value != null ? value : fallback;
+    }
+}

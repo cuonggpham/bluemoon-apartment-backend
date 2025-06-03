@@ -1,15 +1,18 @@
 package com.dev.tagashira.controller;
 
+import com.dev.tagashira.constant.FeeTypeEnum;
 import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
-import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.FeeResponse;
+import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Fee;
-import com.dev.tagashira.constant.FeeTypeEnum;
-import com.dev.tagashira.service.FeeService;
+import com.dev.tagashira.exception.DuplicateFeeException;
+import com.dev.tagashira.exception.NoVehicleException;
+import com.dev.tagashira.service.FeeCrudService;
+import com.dev.tagashira.service.MonthlyFeeGeneratorService;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,95 +21,88 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/fees")
 @CrossOrigin(origins = "http://localhost:5173")
 public class FeeController {
-    private final FeeService feeService;
 
-    //fetch all fees
-    @GetMapping()
-    public ResponseEntity<PaginatedResponse<FeeResponse>> getAllFees(@Filter Specification<Fee> spec,
-                                                             @RequestParam(value = "page", defaultValue = "1") int page,
-                                                             @RequestParam(value = "size", defaultValue = "10") int size) {
+    private final FeeCrudService feeCrudService;
+    private final MonthlyFeeGeneratorService monthlyGenService;
+
+    @GetMapping
+    public ResponseEntity<PaginatedResponse<FeeResponse>> getAllFees(
+            @Filter Specification<Fee> spec,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
         Pageable pageable = PageRequest.of(page - 1, size);
-        PaginatedResponse<FeeResponse> feeResponses = this.feeService.fetchAllFees(spec, pageable);
-        return ResponseEntity.status(HttpStatus.OK).body(feeResponses);
+        return ResponseEntity.ok(feeCrudService.findAll(spec, pageable));
     }
 
-    //fetch fee by feeCode
+    @GetMapping("/all")
+    public ResponseEntity<List<FeeResponse>> getAllFeesNoPagination(@Filter Specification<Fee> spec) {
+        return ResponseEntity.ok(feeCrudService.findAll(spec));
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<FeeResponse> getFeeByFeeCode(@PathVariable("id") Long id) {
-        FeeResponse fetchFee = this.feeService.getFeeResponseById(id);
-        return ResponseEntity.status(HttpStatus.OK).body(fetchFee);
+    public ResponseEntity<FeeResponse> getFee(@PathVariable Long id) {
+        return ResponseEntity.ok(feeCrudService.findById(id));
     }
 
-    //create new fee
-    @PostMapping()
-    public ResponseEntity<FeeResponse> createFee(@Valid @RequestBody FeeCreateRequest apiFee) {
-        FeeResponse fee = this.feeService.createFee(apiFee);
-        return ResponseEntity.status(HttpStatus.CREATED).body(fee);
+    @PostMapping
+    public ResponseEntity<FeeResponse> createFee(@Valid @RequestBody FeeCreateRequest req) {
+        return new ResponseEntity<>(feeCrudService.create(req), HttpStatus.CREATED);
     }
 
-    //update fee
-    @PutMapping()
-    public ResponseEntity<FeeResponse> updateFee(@RequestBody Fee apiFee) {
-        FeeResponse fee = this.feeService.updateFee(apiFee);
-        return ResponseEntity.status(HttpStatus.OK).body(fee);
+    @PutMapping("/{id}")
+    public ResponseEntity<FeeResponse> updateFee(@PathVariable Long id, @RequestBody Fee req) {
+        // đưa id từ path vào payload để đảm bảo khớp
+        req.setId(id);
+        return ResponseEntity.ok(feeCrudService.update(req));
     }
 
-    //Delete resident by feeCode
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteFee(@PathVariable("id") Long id) {
-        ApiResponse<String> response = this.feeService.deleteFee(id);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<String>> deleteFee(@PathVariable Long id) {
+        return ResponseEntity.ok(feeCrudService.delete(id));
     }
 
-    /**
-     * Tạo phí hàng tháng cho tất cả apartment
-     */
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<ApiResponse<String>> deactivateFee(@PathVariable Long id) {
+        feeCrudService.deactivate(id);
+
+        ApiResponse<String> res = new ApiResponse<>();
+        res.setCode(HttpStatus.OK.value());
+        res.setMessage("Fee deactivated successfully");
+        return ResponseEntity.ok(res);
+    }
+
+
     @PostMapping("/monthly/generate")
     public ResponseEntity<List<Fee>> generateMonthlyFees(
             @RequestParam FeeTypeEnum feeType,
-            @RequestParam String billingMonth, // Format: YYYY-MM
+            @RequestParam String billingMonth,           // yyyy-MM
             @RequestParam(required = false) BigDecimal unitPricePerSqm,
             @RequestParam(required = false) String customFeeName) {
-        
-        List<Fee> generatedFees = feeService.generateMonthlyFeesForAllApartments(feeType, billingMonth, unitPricePerSqm, customFeeName);
-        return ResponseEntity.ok(generatedFees);
+
+        YearMonth ym = YearMonth.parse(billingMonth);     // đảm bảo format hợp lệ
+        List<Fee> fees = monthlyGenService.generateForAll(
+                feeType, ym, unitPricePerSqm, customFeeName);
+        return ResponseEntity.ok(fees);
     }
-    
-    /**
-     * Lấy phí chưa thanh toán của một apartment
-     */
+
     @GetMapping("/monthly/unpaid/apartment/{apartmentId}")
-    public ResponseEntity<List<Fee>> getUnpaidMonthlyFeesByApartment(@PathVariable Long apartmentId) {
-        List<Fee> unpaidFees = feeService.getUnpaidMonthlyFeesByApartment(apartmentId);
-        return ResponseEntity.ok(unpaidFees);
+    public ResponseEntity<List<Fee>> getUnpaidMonthlyFees(@PathVariable Long apartmentId) {
+        return ResponseEntity.ok(monthlyGenService
+                .getUnpaidMonthlyFeesByApartment(apartmentId));
     }
-    
-    /**
-     * Lấy tất cả phí theo tháng
-     */
+
     @GetMapping("/monthly/month/{billingMonth}")
     public ResponseEntity<List<Fee>> getMonthlyFeesByMonth(@PathVariable String billingMonth) {
-        List<Fee> monthlyFees = feeService.getMonthlyFeesByMonth(billingMonth);
-        return ResponseEntity.ok(monthlyFees);
-    }
-    
-    /**
-     * Vô hiệu hóa phí (khi đã thanh toán hoặc hủy)
-     */
-    @PutMapping("/{id}/deactivate")
-    public ResponseEntity<ApiResponse<String>> deactivateFee(@PathVariable Long id) {
-        feeService.deactivateFee(id);
-        
-        ApiResponse<String> response = new ApiResponse<>();
-        response.setCode(HttpStatus.OK.value());
-        response.setMessage("Fee deactivated successfully");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(monthlyGenService
+                .getMonthlyFeesByMonth(billingMonth));
     }
 }

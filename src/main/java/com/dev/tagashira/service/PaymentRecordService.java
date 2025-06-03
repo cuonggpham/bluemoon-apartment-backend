@@ -29,7 +29,7 @@ public class PaymentRecordService {
     private final ResidentRepository residentRepository;
     private final FeeRepository feeRepository;
     private final ApartmentRepository apartmentRepository;
-    private final FeeService feeService;
+    private final FeeCrudService feeCrudService;
     
     @Transactional
     public PaymentRecordResponse createPaymentRecord(PaymentRecordRequest request) {
@@ -89,7 +89,7 @@ public class PaymentRecordService {
         
         // If this is a recurring fee (monthly fee), deactivate it after payment
         if (feeEntity.getIsRecurring()) {
-            feeService.deactivateFee(request.getFeeId());
+            feeCrudService.deactivate(request.getFeeId());
         }
         
         return mapToResponse(savedRecord, payer.get(), feeEntity, apartment.get());

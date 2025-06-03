@@ -100,21 +100,12 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(addressID)
                 .orElseThrow(() -> new EntityNotFoundException("Not found apartment " + addressID));
 
-        List<Long> requestResidents = Optional.ofNullable(request.getResidents())
-                .orElse(Collections.emptyList());
-        List<Resident> validResidents = new ArrayList<>(residentRepository.findAllById(requestResidents));
-
         // Update owner
         if (request.getOwnerId() != null) {
             Resident newOwner = residentService.fetchResidentEntityById(request.getOwnerId());
             apartment.setOwner(newOwner);
-            
-            // Ensure owner is in the residentList set
-            if (!validResidents.contains(newOwner)) {
-                validResidents.add(newOwner);
-            }
-        } else {
-            // Handle case where ownerId is null (removing owner)
+        } else if (request.getOwnerId() == null && apartment.getOwner() != null) {
+            // Explicitly setting owner to null (removing owner)
             apartment.setOwner(null);
         }
 
@@ -123,28 +114,53 @@ public class ApartmentService {
         if(request.getArea() != null) apartment.setArea(request.getArea());
         if(request.getOwnerPhone()!=null) apartment.setOwnerPhone(request.getOwnerPhone());
 
-        // Get current residentList
-        Set<Resident> currentResidents = new HashSet<>(apartment.getResidentList());
-        Set<Resident> newResidents = new HashSet<>(validResidents);
+        // Handle residents update logic
+        // IMPORTANT: Only update residents if the residents list is explicitly provided in the request
+        // This prevents accidental deletion of existing residents when updating other fields (like owner only)
+        if (request.getResidents() != null) {
+            // Case 1: Residents list is provided - perform full residents update
+            List<Long> requestResidents = request.getResidents();
+            List<Resident> validResidents = new ArrayList<>(residentRepository.findAllById(requestResidents));
 
-        // Remove residentList no longer associated with this apartment
-        currentResidents.forEach(resident -> {
-            if (!newResidents.contains(resident)) {
-                resident.getApartments().remove(apartment);
-                residentRepository.save(resident);
+            // Ensure owner is in the residentList set if owner exists
+            if (apartment.getOwner() != null && !validResidents.contains(apartment.getOwner())) {
+                validResidents.add(apartment.getOwner());
             }
-        });
 
-        // Add new residentList to the apartment
-        newResidents.forEach(resident -> {
-            resident.getApartments().add(apartment);
-            residentRepository.save(resident);
-        });
+            // Get current residentList
+            Set<Resident> currentResidents = new HashSet<>(apartment.getResidentList());
+            Set<Resident> newResidents = new HashSet<>(validResidents);
 
-        // Update the apartment's residentList set
-        apartment.setResidentList(newResidents);
+            // Remove residentList no longer associated with this apartment
+            currentResidents.forEach(resident -> {
+                if (!newResidents.contains(resident)) {
+                    resident.getApartments().remove(apartment);
+                    residentRepository.save(resident);
+                }
+            });
+
+            // Add new residentList to the apartment
+            newResidents.forEach(resident -> {
+                resident.getApartments().add(apartment);
+                residentRepository.save(resident);
+            });
+
+            // Update the apartment's residentList set
+            apartment.setResidentList(newResidents);
+        } else {
+            // Case 2: Residents list is NOT provided - preserve existing residents, only ensure owner is included
+            // This is the common case when updating owner only or other properties
+            if (apartment.getOwner() != null) {
+                Set<Resident> currentResidents = apartment.getResidentList();
+                if (!currentResidents.contains(apartment.getOwner())) {
+                    currentResidents.add(apartment.getOwner());
+                    apartment.getOwner().getApartments().add(apartment);
+                    residentRepository.save(apartment.getOwner());
+                }
+            }
+        }
+
         Apartment savedApartment = apartmentRepository.save(apartment);
-
         return apartmentConverter.toResponse(savedApartment);
     }
       @Transactional
