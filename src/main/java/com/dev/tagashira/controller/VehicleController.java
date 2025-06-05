@@ -4,7 +4,9 @@ package com.dev.tagashira.controller;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.dto.response.VehicleResponse;
+import com.dev.tagashira.dto.response.VehicleCountSummary;
 import com.dev.tagashira.entity.Vehicle;
+import com.dev.tagashira.constant.VehicleEnum;
 import com.dev.tagashira.service.VehicleService;
 import com.turkraft.springfilter.boot.Filter;
 import lombok.AccessLevel;
@@ -54,5 +56,39 @@ public class VehicleController {
     @PutMapping("/{id}")
     public ResponseEntity<VehicleResponse> updateVehicle(@PathVariable("id") String id, @RequestBody Vehicle vehicle) {
         return ResponseEntity.ok(this.vehicleService.update(id, vehicle));
+    }
+
+    // ============ VEHICLE COUNT APIs FOR FEE CALCULATION ============
+    
+    /**
+     * Get vehicle count summary for an apartment (for fee calculation)
+     */
+    @GetMapping("/count/apartment/{apartmentId}")
+    public ResponseEntity<ApiResponse<VehicleCountSummary>> getVehicleCountSummary(@PathVariable("apartmentId") Long apartmentId) {
+        VehicleCountSummary summary = vehicleService.getVehicleCountSummary(apartmentId);
+        
+        ApiResponse<VehicleCountSummary> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Vehicle count summary retrieved successfully");
+        response.setData(summary);
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get vehicle count for specific type and apartment
+     */
+    @GetMapping("/count/apartment/{apartmentId}/type/{vehicleType}")
+    public ResponseEntity<ApiResponse<Long>> getVehicleCountByType(
+            @PathVariable("apartmentId") Long apartmentId, 
+            @PathVariable("vehicleType") VehicleEnum vehicleType) {
+        Long count = vehicleService.getVehicleCountByType(apartmentId, vehicleType);
+        
+        ApiResponse<Long> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Vehicle count retrieved successfully");
+        response.setData(count);
+        
+        return ResponseEntity.ok(response);
     }
 }

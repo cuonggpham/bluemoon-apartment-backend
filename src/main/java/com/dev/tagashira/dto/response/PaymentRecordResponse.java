@@ -25,4 +25,8 @@ public class PaymentRecordResponse {
     String notes;
     Instant createdAt;
     Instant updatedAt;
+    
+    // Debt status fields
+    Boolean isFullyPaid;
+    BigDecimal remainingAmount;
 } 

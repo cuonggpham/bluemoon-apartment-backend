@@ -12,24 +12,16 @@ import java.util.Optional;
 @Repository
 public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Long> {
     
-    // Check if a payment already exists for a specific payer and fee
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.payerId = :payerId AND pr.feeId = :feeId")
-    Optional<PaymentRecord> findByPayerIdAndFeeId(@Param("payerId") Long payerId, @Param("feeId") Long feeId);
-    
-    // Check if a payment already exists for a specific payer, fee, and apartment
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.payerId = :payerId AND pr.feeId = :feeId AND pr.apartmentId = :apartmentId")
-    Optional<PaymentRecord> findByPayerIdAndFeeIdAndApartmentId(@Param("payerId") Long payerId, @Param("feeId") Long feeId, @Param("apartmentId") Long apartmentId);
-    
     // Get all payments for a specific payer
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.payerId = :payerId ORDER BY pr.paymentDate DESC")
+    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.payer.id = :payerId ORDER BY pr.paymentDate DESC")
     List<PaymentRecord> findByPayerId(@Param("payerId") Long payerId);
     
-    // Get all payments for a specific fee
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.feeId = :feeId ORDER BY pr.paymentDate DESC")
-    List<PaymentRecord> findByFeeId(@Param("feeId") Long feeId);
+    // Get payment for a specific fee (should only be one since Fee 1:1 PaymentRecord)
+    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.fee.id = :feeId")
+    Optional<PaymentRecord> findByFeeId(@Param("feeId") Long feeId);
     
     // Get all payments for a specific apartment
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.apartmentId = :apartmentId ORDER BY pr.paymentDate DESC")
+    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.apartment.addressNumber = :apartmentId ORDER BY pr.paymentDate DESC")
     List<PaymentRecord> findByApartmentId(@Param("apartmentId") Long apartmentId);
     
     // Get all payments ordered by date

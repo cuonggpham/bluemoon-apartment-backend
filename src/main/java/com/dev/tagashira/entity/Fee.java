@@ -2,19 +2,14 @@ package com.dev.tagashira.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.dev.tagashira.constant.FeeTypeEnum;
-import com.dev.tagashira.service.SecurityUtil;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-
-import static jakarta.persistence.FetchType.LAZY;
 
 @Entity
 @Table(name = "fees")
@@ -37,21 +32,24 @@ public class Fee {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    FeeTypeEnum feeTypeEnum; // Unified fee type enum
+    FeeTypeEnum feeTypeEnum;
 
     @Column(nullable = false)
-    BigDecimal amount; // Final calculated amount to be paid (VNĐ)
+    BigDecimal amount;
 
     @Column(nullable = true)
-    BigDecimal unitPrice; // Unit price for reference (VNĐ per unit - xe, m², etc.)
+    BigDecimal unitPrice;
 
-    @Column(nullable = true)
-    Long apartmentId; // Apartment this fee applies to (for specific apartment fees)
+    @Column(nullable = false)
+    Long apartmentId;
 
-    // Phí định kỳ
+    @OneToOne(mappedBy = "fee", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    PaymentRecord paymentRecord;
+
     @Builder.Default
     @Column(nullable = false)
-    Boolean isRecurring = false; // true cho Monthly Fee, false cho Fee thường
+    Boolean isRecurring = false;
     
     @Builder.Default
     @Column(nullable = false)
@@ -77,6 +75,14 @@ public class Fee {
     // ============ HELPER METHODS ============
     
     /**
+     * Check if this fee has been paid
+     */
+    @JsonIgnore
+    public boolean isPaid() {
+        return paymentRecord != null;
+    }
+    
+    /**
      * Check if this fee is mandatory (requires specific apartment)
      */
     @JsonIgnore
@@ -90,7 +96,7 @@ public class Fee {
     }
     
     /**
-     * Check if this fee is voluntary (can be applied to any apartment)
+     * Check if this fee is voluntary
      */
     @JsonIgnore
     public boolean isVoluntary() {

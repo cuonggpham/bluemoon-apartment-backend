@@ -49,6 +49,10 @@ public class Apartment {
     @OneToMany(mappedBy = "apartment", cascade = CascadeType.ALL)
     private List<Vehicle> vehicleList;
 
+    @OneToMany(mappedBy = "apartment", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    List<PaymentRecord> paymentRecords;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     Resident owner;

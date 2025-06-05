@@ -12,10 +12,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentRecordRequest {
-    Long payerId;
-    Long feeId;
-    Long apartmentId;
-    LocalDate paymentDate;
-    BigDecimal amount;
-    String notes;
+    Long payerId;           // ID người thanh toán
+    Long feeId;             // ID khoản phí
+    LocalDate paymentDate;  // Ngày thanh toán
+    BigDecimal amount;      // Số tiền thanh toán
+    String notes;           // Ghi chú
 } 

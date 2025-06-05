@@ -122,7 +122,6 @@ public class VehicleService {
         
         VehicleCountSummary summary = new VehicleCountSummary();
         summary.setApartmentId(apartmentId);
-        summary.setBicycleCount(0L);
         summary.setMotorbikeCount(0L);
         summary.setCarCount(0L);
         

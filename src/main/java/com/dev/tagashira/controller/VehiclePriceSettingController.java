@@ -24,30 +24,48 @@ public class VehiclePriceSettingController {
      * Get all active vehicle price settings
      */
     @GetMapping
-    public ResponseEntity<List<VehiclePriceSetting>> getAllActiveSettings() {
+    public ResponseEntity<ApiResponse<List<VehiclePriceSetting>>> getAllActiveSettings() {
         List<VehiclePriceSetting> settings = vehiclePriceSettingService.getAllActiveSettings();
-        return ResponseEntity.ok(settings);
+        
+        ApiResponse<List<VehiclePriceSetting>> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Vehicle price settings retrieved successfully");
+        response.setData(settings);
+        
+        return ResponseEntity.ok(response);
     }
     
     /**
      * Get price for specific vehicle type
      */
     @GetMapping("/price/{vehicleType}")
-    public ResponseEntity<BigDecimal> getPriceForVehicle(@PathVariable VehicleEnum vehicleType) {
+    public ResponseEntity<ApiResponse<BigDecimal>> getPriceForVehicle(@PathVariable VehicleEnum vehicleType) {
         BigDecimal price = vehiclePriceSettingService.getPriceForVehicle(vehicleType);
-        return ResponseEntity.ok(price);
+        
+        ApiResponse<BigDecimal> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Vehicle price retrieved successfully");
+        response.setData(price);
+        
+        return ResponseEntity.ok(response);
     }
     
     /**
      * Create or update vehicle price setting
      */
     @PostMapping
-    public ResponseEntity<VehiclePriceSetting> createOrUpdatePriceSetting(
+    public ResponseEntity<ApiResponse<VehiclePriceSetting>> createOrUpdatePriceSetting(
             @RequestParam VehicleEnum vehicleType,
             @RequestParam BigDecimal pricePerVehicle) {
         
         VehiclePriceSetting setting = vehiclePriceSettingService.createOrUpdatePriceSetting(vehicleType, pricePerVehicle);
-        return ResponseEntity.ok(setting);
+        
+        ApiResponse<VehiclePriceSetting> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Vehicle price setting updated successfully");
+        response.setData(setting);
+        
+        return ResponseEntity.ok(response);
     }
     
     /**

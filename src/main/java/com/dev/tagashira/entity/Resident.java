@@ -14,6 +14,7 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
 
 @Entity
 @Table(name = "residentList")
@@ -41,6 +42,10 @@ public class Resident {
     @JsonIgnore
     @Builder.Default
     Set<Apartment> apartments = new HashSet<>();
+
+    @OneToMany(mappedBy = "payer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    List<PaymentRecord> paymentRecords;
 
     @Enumerated(EnumType.STRING)
     ResidentEnum status;

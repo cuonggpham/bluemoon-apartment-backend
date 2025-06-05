@@ -8,10 +8,12 @@ import com.dev.tagashira.service.FeeCrudService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/payment-records")
@@ -23,8 +25,14 @@ public class PaymentRecordController {
     private final FeeCrudService feeCrudService;
     
     @PostMapping
-    public ResponseEntity<PaymentRecordResponse> createPaymentRecord(@RequestBody PaymentRecordRequest request) {
+    public ResponseEntity<PaymentRecordResponse> createPaymentRecord(@Valid @RequestBody PaymentRecordRequest request) {
         PaymentRecordResponse response = paymentRecordService.createPaymentRecord(request);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<PaymentRecordResponse> updatePaymentRecord(@PathVariable Long id, @Valid @RequestBody PaymentRecordRequest request) {
+        PaymentRecordResponse response = paymentRecordService.updatePaymentRecord(id, request);
         return ResponseEntity.ok(response);
     }
     
@@ -41,9 +49,10 @@ public class PaymentRecordController {
     }
     
     @GetMapping("/fee/{feeId}")
-    public ResponseEntity<List<PaymentRecordResponse>> getPaymentsByFee(@PathVariable Long feeId) {
-        List<PaymentRecordResponse> records = paymentRecordService.getPaymentsByFee(feeId);
-        return ResponseEntity.ok(records);
+    public ResponseEntity<PaymentRecordResponse> getPaymentByFee(@PathVariable Long feeId) {
+        Optional<PaymentRecordResponse> record = paymentRecordService.getPaymentByFee(feeId);
+        return record.map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
     }
     
     @GetMapping("/fee/{feeId}/total-amount")

@@ -21,6 +21,7 @@ public class Vehicle {
     @Id
     String id;
 
+    @Enumerated(EnumType.STRING)
     VehicleEnum category;
 
     @ManyToOne()

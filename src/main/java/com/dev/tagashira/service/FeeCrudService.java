@@ -1,9 +1,11 @@
 package com.dev.tagashira.service;
 
+import com.dev.tagashira.constant.FeeTypeEnum;
 import com.dev.tagashira.dto.request.FeeCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.FeeResponse;
 import com.dev.tagashira.dto.response.PaginatedResponse;
+import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Fee;
 import com.dev.tagashira.exception.FeeNotFoundException;
 import com.dev.tagashira.repository.FeeRepository;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,6 +33,7 @@ public class FeeCrudService {
     private final FeeRepository feeRepository;
     private final FeeConverter feeConverter;
     private final FeeBuilderFactory feeBuilderFactory;
+    private final com.dev.tagashira.repository.ApartmentRepository apartmentRepository;
 
     public PaginatedResponse<FeeResponse> findAll(Specification<Fee> spec, Pageable pageable) {
         Page<Fee> page = feeRepository.findAll(spec, pageable);
@@ -66,6 +70,41 @@ public class FeeCrudService {
 
         Fee saved = feeRepository.save(builder.build());
         return feeConverter.toResponse(saved);
+    }
+
+    @Transactional
+    public List<FeeResponse> createVoluntaryFeeForAllApartments(FeeCreateRequest req) {
+        if (req.getFeeTypeEnum() != FeeTypeEnum.VOLUNTARY) {
+            throw new IllegalArgumentException("This method is only for VOLUNTARY fees");
+        }
+
+        // Get all active apartments
+        List<Apartment> apartments = apartmentRepository.findAll();
+        List<Fee> createdFees = new ArrayList<>();
+
+        for (Apartment apartment : apartments) {
+            // Create fee name with apartment number
+            String feeNameForApartment = req.getName() + " (Apartment: " + apartment.getAddressNumber() + ")";
+            
+            // Check if fee already exists for this apartment
+            if (feeRepository.findByNameAndApartmentId(feeNameForApartment, apartment.getAddressNumber()).isPresent()) {
+                continue; // Skip if already exists
+            }
+
+            Fee.FeeBuilder builder = feeBuilderFactory.base()
+                    .name(feeNameForApartment)
+                    .description(req.getDescription())
+                    .feeTypeEnum(req.getFeeTypeEnum())
+                    .amount(req.getAmount())
+                    .unitPrice(req.getUnitPrice())
+                    .apartmentId(apartment.getAddressNumber()) // Link to specific apartment
+                    .isRecurring(Boolean.TRUE.equals(req.getIsRecurring()));
+
+            Fee saved = feeRepository.save(builder.build());
+            createdFees.add(saved);
+        }
+
+        return feeConverter.toResponseList(createdFees);
     }
 
     @Transactional

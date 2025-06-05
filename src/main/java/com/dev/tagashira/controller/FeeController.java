@@ -58,6 +58,18 @@ public class FeeController {
         return new ResponseEntity<>(feeCrudService.create(req), HttpStatus.CREATED);
     }
 
+    @PostMapping("/voluntary/create-for-all")
+    public ResponseEntity<ApiResponse<List<FeeResponse>>> createVoluntaryFeeForAllApartments(@Valid @RequestBody FeeCreateRequest req) {
+        List<FeeResponse> createdFees = feeCrudService.createVoluntaryFeeForAllApartments(req);
+        
+        ApiResponse<List<FeeResponse>> response = new ApiResponse<>();
+        response.setCode(HttpStatus.CREATED.value());
+        response.setMessage("Voluntary fees created for " + createdFees.size() + " apartments");
+        response.setData(createdFees);
+        
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<FeeResponse> updateFee(@PathVariable Long id, @RequestBody Fee req) {
         // đưa id từ path vào payload để đảm bảo khớp
