@@ -84,7 +84,7 @@ public class FeeController {
     @PostMapping("/monthly/generate")
     public ResponseEntity<List<Fee>> generateMonthlyFees(
             @RequestParam FeeTypeEnum feeType,
-            @RequestParam String billingMonth,           // yyyy-MM
+            @RequestParam String billingMonth,
             @RequestParam(required = false) BigDecimal unitPricePerSqm,
             @RequestParam(required = false) String customFeeName) {
 

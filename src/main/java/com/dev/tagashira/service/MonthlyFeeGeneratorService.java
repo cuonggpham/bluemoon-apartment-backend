@@ -62,19 +62,15 @@ public class MonthlyFeeGeneratorService {
         for (Apartment apt : apartments) {
             try {
                 Fee fee = generateForApartmentInternal(apt, feeType, param, calculator);
-                if (fee != null) {
-                    results.add(fee);
-                }
+                results.add(fee);
             } catch (DuplicateFeeException e) {
                 // Skip apartment that already has this fee - continue with next apartment
                 System.out.printf("Skipping apartment %d: Fee already exists - %s%n", 
                     apt.getAddressNumber(), e.getMessage());
-                continue;
             } catch (NoVehicleException e) {
                 // Skip apartment with no vehicles - continue with next apartment  
                 System.out.printf("Skipping apartment %d: No vehicles found - %s%n",
                     apt.getAddressNumber(), e.getMessage());
-                continue;
             }
         }
         return results;
@@ -110,7 +106,7 @@ public class MonthlyFeeGeneratorService {
             throw new DuplicateFeeException(feeName, apt.getAddressNumber());
         }
 
-        // Calculate fee amount using calculator (may throw NoVehicleException)
+        // Calculate fee amount using calculator
         CalculationResult calc = calculator.calculate(apt, param);
 
         Fee fee = feeBuilderFactory.monthly()
