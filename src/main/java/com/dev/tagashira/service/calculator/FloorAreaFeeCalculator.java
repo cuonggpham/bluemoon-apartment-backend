@@ -20,10 +20,10 @@ class FloorAreaFeeCalculator implements FeeCalculator {
         BigDecimal amount = p.unitPricePerSqm().multiply(area);
 
         String base = (p.customFeeName() == null || p.customFeeName().isBlank())
-                ? "Phí diện tích sàn" : p.customFeeName() + " for " + apt.getAddressNumber();
+                ? "Phí diện tích sàn" : p.customFeeName();
 
         String desc = "%s tháng %s: %.2f m² x %s = %s"
-                .formatted(base + " (" + apt.getAddressNumber() + ")",
+                .formatted(base + " (apartment: " + apt.getAddressNumber() + ")",
                         p.billingMonth(), area, p.unitPricePerSqm(), amount);
 
         return new CalculationResult(amount, p.unitPricePerSqm(), desc);
