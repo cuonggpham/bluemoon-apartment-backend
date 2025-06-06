@@ -32,11 +32,6 @@ public class PaymentRecord {
     @JsonIgnore
     Fee fee;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "apartment_id", nullable = false)
-    @JsonIgnore
-    Apartment apartment;
-
     @Column(nullable = false)
     LocalDate paymentDate;
 
@@ -73,6 +68,17 @@ public class PaymentRecord {
     public void onLoad() {
         this.payerId = payer != null ? payer.getId() : null;
         this.feeId = fee != null ? fee.getId() : null;
-        this.apartmentId = apartment != null ? apartment.getAddressNumber() : null;
+        this.apartmentId = (fee != null && fee.getApartment() != null) ? fee.getApartment().getAddressNumber() : null;
+    }
+
+    @JsonIgnore
+    public Apartment getApartment() {
+        return fee != null ? fee.getApartment() : null;
+    }
+
+    @JsonIgnore
+    public Long getApartmentId() {
+        Apartment apartment = getApartment();
+        return apartment != null ? apartment.getAddressNumber() : null;
     }
 } 

@@ -109,13 +109,12 @@ public class MonthlyFeeGeneratorService {
         // Calculate fee amount using calculator
         CalculationResult calc = calculator.calculate(apt, param);
 
-        Fee fee = feeBuilderFactory.monthly()
+        Fee fee = feeBuilderFactory.monthlyWithApartment(apt)
                 .name(feeName)
                 .description(calc.description())
                 .feeTypeEnum(feeType)
                 .amount(calc.amount())
                 .unitPrice(calc.unitPrice())
-                .apartmentId(apt.getAddressNumber())
                 .build();
 
         return feeRepo.save(fee);

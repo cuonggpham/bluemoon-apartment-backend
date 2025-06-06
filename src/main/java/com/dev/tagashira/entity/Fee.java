@@ -8,7 +8,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -37,11 +36,13 @@ public class Fee {
     @Column(nullable = false)
     BigDecimal amount;
 
-    @Column(nullable = true)
+    @Column()
     BigDecimal unitPrice;
 
-    @Column(nullable = false)
-    Long apartmentId;
+    @ManyToOne
+    @JoinColumn(name = "apartment_id", nullable = false)
+    @JsonIgnore
+    Apartment apartment;
 
     @OneToOne(mappedBy = "fee", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
@@ -62,6 +63,9 @@ public class Fee {
     LocalDate createdAt;
     LocalDate updatedAt;
 
+    @Transient
+    Long apartmentId;
+
     @PrePersist
     public void beforeCreate() {
         this.createdAt = LocalDate.now();
@@ -70,6 +74,11 @@ public class Fee {
     @PreUpdate
     public void beforeUpdate() {
         this.updatedAt = LocalDate.now();
+    }
+    
+    @PostLoad
+    public void onLoad() {
+        this.apartmentId = apartment != null ? apartment.getAddressNumber() : null;
     }
     
     // ============ HELPER METHODS ============
@@ -137,5 +146,15 @@ public class Fee {
             case FLOOR_AREA -> "m²";
             default -> "đơn vị";
         };
+    }
+    
+    @JsonIgnore
+    public Long getApartmentNumber() {
+        return apartment != null ? apartment.getAddressNumber() : null;
+    }
+    
+    @JsonIgnore
+    public String getApartmentInfo() {
+        return apartment != null ? "Apartment #" + apartment.getAddressNumber() : "No apartment";
     }
 }

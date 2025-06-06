@@ -49,7 +49,9 @@ public class Resident {
 
     @Enumerated(EnumType.STRING)
     ResidentEnum status;
+
     int isActive;
+
     LocalDate statusDate;
 
     @Transient

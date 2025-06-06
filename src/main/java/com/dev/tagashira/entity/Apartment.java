@@ -3,6 +3,7 @@ package com.dev.tagashira.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.dev.tagashira.constant.ApartmentEnum;
+import com.dev.tagashira.constant.VehicleEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -13,8 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.HashSet;
 import java.util.Set;
-
-import com.dev.tagashira.constant.VehicleEnum;
 
 @Entity
 @Table(name = "apartments")
@@ -51,7 +50,7 @@ public class Apartment {
 
     @OneToMany(mappedBy = "apartment", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
-    List<PaymentRecord> paymentRecords;
+    private List<Fee> fees;
 
     @ManyToOne
     @JoinColumn(name = "owner_id")
@@ -92,5 +91,43 @@ public class Apartment {
         numberOfCars = vehicleList.stream()
                 .filter(vehicle -> vehicle.getCategory() == VehicleEnum.Car)
                 .count();
+    }
+
+    /**
+     * Get all active fees for this apartment
+     */
+    @JsonIgnore
+    public List<Fee> getActiveFees() {
+        return fees != null ? fees.stream()
+                .filter(fee -> Boolean.TRUE.equals(fee.getIsActive()))
+                .toList() : Collections.emptyList();
+    }
+
+    /**
+     * Get all unpaid fees for this apartment
+     */
+    @JsonIgnore
+    public List<Fee> getUnpaidFees() {
+        return fees != null ? fees.stream()
+                .filter(fee -> Boolean.TRUE.equals(fee.getIsActive()) && !fee.isPaid())
+                .toList() : Collections.emptyList();
+    }
+
+    /**
+     * Get all recurring (monthly) fees for this apartment
+     */
+    @JsonIgnore
+    public List<Fee> getRecurringFees() {
+        return fees != null ? fees.stream()
+                .filter(fee -> Boolean.TRUE.equals(fee.getIsRecurring()) && Boolean.TRUE.equals(fee.getIsActive()))
+                .toList() : Collections.emptyList();
+    }
+
+    /**
+     * Check if apartment has any unpaid fees
+     */
+    @JsonIgnore
+    public boolean hasUnpaidFees() {
+        return !getUnpaidFees().isEmpty();
     }
 }

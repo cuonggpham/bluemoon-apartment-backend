@@ -117,4 +117,38 @@ public class FeeController {
         return ResponseEntity.ok(monthlyGenService
                 .getMonthlyFeesByMonth(billingMonth));
     }
+
+    @GetMapping("/apartment/{apartmentId}")
+    public ResponseEntity<List<FeeResponse>> getFeesByApartment(@PathVariable Long apartmentId) {
+        List<FeeResponse> fees = feeCrudService.getFeesByApartment(apartmentId);
+        return ResponseEntity.ok(fees);
+    }
+
+    @GetMapping("/apartment/{apartmentId}/unpaid")
+    public ResponseEntity<List<FeeResponse>> getUnpaidFeesByApartment(@PathVariable Long apartmentId) {
+        List<FeeResponse> fees = feeCrudService.getUnpaidFeesByApartment(apartmentId);
+        return ResponseEntity.ok(fees);
+    }
+
+    @GetMapping("/apartment/{apartmentId}/summary")
+    public ResponseEntity<ApiResponse<Object>> getApartmentFeeSummary(@PathVariable Long apartmentId) {
+        List<FeeResponse> allFees = feeCrudService.getFeesByApartment(apartmentId);
+        List<FeeResponse> unpaidFees = feeCrudService.getUnpaidFeesByApartment(apartmentId);
+        
+        class FeeSummary {
+            public final int totalFees = allFees.size();
+            public final int unpaidFeesCount = unpaidFees.size();
+            public final int paidFees = totalFees - unpaidFeesCount;
+            public final List<FeeResponse> unpaidFeesList = unpaidFees;
+        }
+        
+        FeeSummary summary = new FeeSummary();
+
+        ApiResponse<Object> response = new ApiResponse<>();
+        response.setCode(HttpStatus.OK.value());
+        response.setMessage("Apartment fee summary retrieved successfully");
+        response.setData(summary);
+        
+        return ResponseEntity.ok(response);
+    }
 }

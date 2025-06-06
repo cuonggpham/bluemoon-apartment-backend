@@ -30,7 +30,6 @@ public class PaymentRecordService {
     private final ResidentRepository residentRepository;
     private final FeeRepository feeRepository;
     private final ApartmentRepository apartmentRepository;
-    private final FeeCrudService feeCrudService;
     
     @Transactional
     public PaymentRecordResponse createPaymentRecord(PaymentRecordRequest request) {
@@ -42,16 +41,12 @@ public class PaymentRecordService {
         Fee fee = feeRepository.findById(request.getFeeId())
             .orElseThrow(() -> new RuntimeException("Fee not found with ID: " + request.getFeeId()));
         
-        // All fees now have apartmentId, use it directly
-        if (fee.getApartmentId() == null) {
+        if (fee.getApartment() == null) {
             throw new RuntimeException("Fee must have an associated apartment");
         }
         
-        Long apartmentId = fee.getApartmentId();
-        
-        // Validate apartment exists
-        Apartment apartment = apartmentRepository.findById(apartmentId)
-            .orElseThrow(() -> new RuntimeException("Apartment not found with ID: " + apartmentId));
+        // Get apartment through fee relationship
+        Apartment apartment = fee.getApartment();
         
         // Check if fee has already been paid (for non-voluntary fees)
         if (fee.getFeeTypeEnum() != FeeTypeEnum.VOLUNTARY && fee.isPaid()) {
@@ -79,11 +74,10 @@ public class PaymentRecordService {
             }
         }
         
-        // Create new payment record using relationships
+        // Create new payment record
         PaymentRecord paymentRecord = PaymentRecord.builder()
             .payer(payer)
             .fee(fee)
-            .apartment(apartment)
             .paymentDate(request.getPaymentDate())
             .amount(request.getAmount())
             .notes(request.getNotes())
@@ -91,9 +85,11 @@ public class PaymentRecordService {
         
         PaymentRecord savedRecord = paymentRecordRepository.save(paymentRecord);
         
-        // If this is a recurring fee (monthly fee) and paid in full, deactivate it
+        // If this is a recurring fee (monthly fee) and paid in full, deactivate it directly
         if (fee.getIsRecurring() && request.getAmount().compareTo(fee.getAmount()) >= 0) {
-            feeCrudService.deactivate(request.getFeeId());
+            fee.setIsActive(false);
+            fee.setEffectiveTo(LocalDate.now());
+            feeRepository.save(fee);
         }
         
         return mapToResponse(savedRecord, payer, fee, apartment);
@@ -148,9 +144,11 @@ public class PaymentRecordService {
         
         PaymentRecord savedRecord = paymentRecordRepository.save(existingPayment);
         
-        // Check if fee should be deactivated after update
+        // Check if fee should be deactivated after update - direct update
         if (fee.getIsRecurring() && request.getAmount().compareTo(fee.getAmount()) >= 0) {
-            feeCrudService.deactivate(fee.getId());
+            fee.setIsActive(false);
+            fee.setEffectiveTo(LocalDate.now());
+            feeRepository.save(fee);
         }
         
         return mapToResponseFromEntity(savedRecord);
@@ -239,8 +237,8 @@ public class PaymentRecordService {
         response.setPayerName(record.getPayer().getName());
         response.setFeeId(record.getFee().getId());
         response.setFeeName(record.getFee().getName());
-        response.setApartmentId(record.getApartment().getAddressNumber());
-        response.setApartmentNumber(record.getApartment().getAddressNumber().toString());
+        response.setApartmentId(record.getApartmentId());
+        response.setApartmentNumber(record.getApartmentId() != null ? record.getApartmentId().toString() : null);
         response.setPaymentDate(record.getPaymentDate());
         response.setAmount(record.getAmount());
         response.setNotes(record.getNotes());

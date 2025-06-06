@@ -8,6 +8,7 @@ import com.dev.tagashira.dto.response.PaginatedResponse;
 import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Fee;
 import com.dev.tagashira.exception.FeeNotFoundException;
+import com.dev.tagashira.exception.ApartmentNotFoundException;
 import com.dev.tagashira.repository.FeeRepository;
 import com.dev.tagashira.converter.FeeConverter;
 import com.dev.tagashira.service.factory.FeeBuilderFactory;
@@ -59,13 +60,16 @@ public class FeeCrudService {
 
     @Transactional
     public FeeResponse create(FeeCreateRequest req) {
+        Apartment apartment = apartmentRepository.findById(req.getApartmentId())
+                .orElseThrow(() -> new ApartmentNotFoundException("Apartment " + req.getApartmentId() + " not found"));
+
         Fee.FeeBuilder builder = feeBuilderFactory.base()
                 .name(req.getName())
                 .description(req.getDescription())
                 .feeTypeEnum(req.getFeeTypeEnum())
                 .amount(req.getAmount())
                 .unitPrice(req.getUnitPrice())
-                .apartmentId(req.getApartmentId())
+                .apartment(apartment)
                 .isRecurring(Boolean.TRUE.equals(req.getIsRecurring()));
 
         Fee saved = feeRepository.save(builder.build());
@@ -97,7 +101,7 @@ public class FeeCrudService {
                     .feeTypeEnum(req.getFeeTypeEnum())
                     .amount(req.getAmount())
                     .unitPrice(req.getUnitPrice())
-                    .apartmentId(apartment.getAddressNumber()) // Link to specific apartment
+                    .apartment(apartment)
                     .isRecurring(Boolean.TRUE.equals(req.getIsRecurring()));
 
             Fee saved = feeRepository.save(builder.build());
@@ -112,13 +116,20 @@ public class FeeCrudService {
         Fee existing = feeRepository.findById(updatePayload.getId())
                 .orElseThrow(() -> new FeeNotFoundException("Fee " + updatePayload.getId() + " not found"));
 
+        Apartment apartmentToUpdate = existing.getApartment();
+        if (updatePayload.getApartmentId() != null && 
+            !updatePayload.getApartmentId().equals(existing.getApartmentNumber())) {
+            apartmentToUpdate = apartmentRepository.findById(updatePayload.getApartmentId())
+                    .orElseThrow(() -> new ApartmentNotFoundException("Apartment " + updatePayload.getApartmentId() + " not found"));
+        }
+
         Fee updated = feeBuilderFactory.from(existing)
                 .name(nvl(updatePayload.getName(), existing.getName()))
                 .description(nvl(updatePayload.getDescription(), existing.getDescription()))
                 .feeTypeEnum(nvl(updatePayload.getFeeTypeEnum(), existing.getFeeTypeEnum()))
                 .amount(nvl(updatePayload.getAmount(), existing.getAmount()))
                 .unitPrice(nvl(updatePayload.getUnitPrice(), existing.getUnitPrice()))
-                .apartmentId(nvl(updatePayload.getApartmentId(), existing.getApartmentId()))
+                .apartment(apartmentToUpdate)
                 .isRecurring(nvl(updatePayload.getIsRecurring(), existing.getIsRecurring()))
                 .isActive(nvl(updatePayload.getIsActive(), existing.getIsActive()))
                 .effectiveFrom(nvl(updatePayload.getEffectiveFrom(), existing.getEffectiveFrom()))
@@ -152,6 +163,16 @@ public class FeeCrudService {
                 .updatedAt(LocalDate.now())
                 .build();
         feeRepository.save(deactivated);
+    }
+
+    public List<FeeResponse> getFeesByApartment(Long apartmentId) {
+        List<Fee> fees = feeRepository.findByApartmentId(apartmentId);
+        return feeConverter.toResponseList(fees);
+    }
+
+    public List<FeeResponse> getUnpaidFeesByApartment(Long apartmentId) {
+        List<Fee> fees = feeRepository.findUnpaidFeesByApartmentId(apartmentId);
+        return feeConverter.toResponseList(fees);
     }
 
     private static <T> T nvl(T value, T fallback) {

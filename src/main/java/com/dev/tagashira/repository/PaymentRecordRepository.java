@@ -20,8 +20,8 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Lo
     @Query("SELECT pr FROM PaymentRecord pr WHERE pr.fee.id = :feeId")
     Optional<PaymentRecord> findByFeeId(@Param("feeId") Long feeId);
     
-    // Get all payments for a specific apartment
-    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.apartment.addressNumber = :apartmentId ORDER BY pr.paymentDate DESC")
+    // Get all payments for a specific apartment through fee relationship
+    @Query("SELECT pr FROM PaymentRecord pr WHERE pr.fee.apartment.addressNumber = :apartmentId ORDER BY pr.paymentDate DESC")
     List<PaymentRecord> findByApartmentId(@Param("apartmentId") Long apartmentId);
     
     // Get all payments ordered by date
