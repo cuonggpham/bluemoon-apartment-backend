@@ -45,7 +45,7 @@ public class VehicleController {
 
     @GetMapping
     @Operation(summary = "Get all vehicles", description = "Retrieve all vehicles with pagination and filtering")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER')")
     public ResponseEntity<PaginatedResponse<VehicleResponse>> getAllVehicles(@Filter Specification<Vehicle> spec,
                                                                      @RequestParam(value = "page", defaultValue = "1") int page,
                                                                      @RequestParam(value = "size", defaultValue = "10") int size){
@@ -57,7 +57,7 @@ public class VehicleController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get vehicles by apartment", description = "Get all vehicles for a specific apartment")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('ACCOUNTANT', 'MANAGER')")
     public ResponseEntity<List<VehicleResponse>> getAllVehiclesById(@PathVariable("id") long apartmentId) {
         log.info("GET /api/v1/vehicles/{} - Fetching vehicles by apartment", apartmentId);
         return ResponseEntity.ok(this.vehicleService.findAllByApartmentId(apartmentId));

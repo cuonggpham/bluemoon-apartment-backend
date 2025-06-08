@@ -100,7 +100,7 @@ public class SecurityConfig{
                         .requestMatchers("DELETE", "/api/v1/residents/**").hasRole("MANAGER")
                         
                         // Vehicle management - MANAGER for CRUD, both for count queries
-                        .requestMatchers("GET", "/api/v1/vehicles/count/**").hasAnyRole("ACCOUNTANT", "MANAGER")
+                        .requestMatchers("GET", "/api/v1/vehicles/**").hasAnyRole("ACCOUNTANT", "MANAGER")
                         .requestMatchers("/api/v1/vehicles").hasRole("MANAGER")
                         .requestMatchers("/api/v1/vehicles/**").hasRole("MANAGER")
                         
