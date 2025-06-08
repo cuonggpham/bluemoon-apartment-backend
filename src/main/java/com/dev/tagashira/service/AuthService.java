@@ -79,7 +79,7 @@ public class AuthService {
         // authenticate user => need to define loadUserByUsername method
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
 
-        // Put information into securitycontext if user logins successfully. Spring has already done it, but we can config in here.
+        // Put information into security context if user logins successfully. Spring has already done it, but we can config in here.
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         ResLoginDTO res = new ResLoginDTO();

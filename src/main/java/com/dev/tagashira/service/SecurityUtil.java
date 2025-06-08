@@ -64,11 +64,10 @@ public class SecurityUtil {
         Instant now = Instant.now();
         Instant validity = now.plus(this.accessTokenExpiration, ChronoUnit.SECONDS);
 
-        // hardcode permission (for testing)
-        List<String> listAuthority = new ArrayList<String>();
-
-        listAuthority.add("ROLE_USER_CREATE");
-        listAuthority.add("ROLE_USER_UPDATE");
+        // Extract roles from authorities
+        List<String> roles = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
 
         // @formatter:off
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -76,7 +75,7 @@ public class SecurityUtil {
                 .expiresAt(validity)
                 .subject(email)
                 .claim("user", dto)
-                .claim("permission", listAuthority)
+                .claim("roles", roles)
                 .build();
 
         JwsHeader jwsHeader = JwsHeader.with(JWT_ALGORITHM).build();
@@ -105,15 +104,14 @@ public class SecurityUtil {
     //Create cookies bearing refresh token
     public ResponseCookie createCookie(String refresh_token) {
         // set cookies
-        ResponseCookie resCookies = ResponseCookie
+
+        return ResponseCookie
                 .from("refresh_token", refresh_token)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
                 .maxAge(refreshTokenExpiration)
                 .build();
-
-        return resCookies;
     }
 
     private SecretKey getSecretKey() {
@@ -154,8 +152,14 @@ public class SecurityUtil {
                     currentUserDB.getName());
             res.setUser(userLogin);
         }
+        
+        // Load user authorities from roles
+        Collection<GrantedAuthority> authorities = currentUserDB.getRoles().stream()
+                .map(role -> (GrantedAuthority) () -> role.getName())
+                .collect(Collectors.toList());
+        
         // create access token
-        String access_token = this.createAccessToken(email, res.getUser(), Collections.emptyList());//Authorization has not been loaded yet
+        String access_token = this.createAccessToken(email, res.getUser(), authorities);
         res.setAccessToken(access_token);
         // create refresh token
         String new_refresh_token = this.createRefreshToken(email, res);

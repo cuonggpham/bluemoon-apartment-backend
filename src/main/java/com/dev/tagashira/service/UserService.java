@@ -1,27 +1,41 @@
 package com.dev.tagashira.service;
 
 
+import com.dev.tagashira.constant.RoleConstant;
+import com.dev.tagashira.dto.RoleDTO;
 import com.dev.tagashira.dto.request.UserCreateRequest;
 import com.dev.tagashira.dto.response.ApiResponse;
 import com.dev.tagashira.dto.response.UserResponse;
+import com.dev.tagashira.entity.Role;
 import com.dev.tagashira.entity.User;
+import com.dev.tagashira.exception.ResourceNotFoundException;
 import com.dev.tagashira.exception.UserInfoException;
+import com.dev.tagashira.mapper.RoleMapper;
 import com.dev.tagashira.mapper.UserMapper;
+import com.dev.tagashira.repository.RoleRepository;
 import com.dev.tagashira.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
+@Slf4j
+@Transactional
 public class UserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
     private PasswordEncoder passwordEncoder;
 
     //Logic fetch all user
@@ -31,7 +45,18 @@ public class UserService {
 
     public List<UserResponse> fetchAllUserResponse() {
         List<User> users = this.userRepository.findAll();
-        return this.userMapper.toUserResponseList(users);
+        List<UserResponse> userResponses = this.userMapper.toUserResponseList(users);
+        
+        // Manually map roles for each user
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            UserResponse userResponse = userResponses.get(i);
+            userResponse.setRoles(user.getRoles().stream()
+                    .map(roleMapper::toDTO)
+                    .collect(Collectors.toList()));
+        }
+        
+        return userResponses;
     }
 
     //fetch user by id
@@ -101,6 +126,12 @@ public class UserService {
         user.setPassword(hashPassword);
         user.setEmail(userCreateRequest.getUsername());
         user.setAuthType("normal");
+        
+        // Assign default role (ROLE_ACCOUNTANT) to new users
+        Role defaultRole = roleRepository.findByName(RoleConstant.ROLE_ACCOUNTANT)
+                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
+        user.getRoles().add(defaultRole);
+        
         return this.userRepository.save(user);
     }
     public void updateUserToken(String token, String email) {
@@ -114,6 +145,80 @@ public class UserService {
         return this.userRepository.findByRefreshTokenAndEmail(token, email);
     }
     public UserResponse UserToUserResponse(User user) {
-        return this.userMapper.toUserResponse(user);
+        UserResponse userResponse = this.userMapper.toUserResponse(user);
+        // Manually map roles
+        userResponse.setRoles(user.getRoles().stream()
+                .map(roleMapper::toDTO)
+                .collect(Collectors.toList()));
+        return userResponse;
+    }
+
+    /**
+     * Get user roles
+     */
+    public List<RoleDTO> getUserRoles(Long userId) {
+        log.info("Fetching roles for user id: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        return user.getRoles().stream()
+                .map(roleMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Assign roles to user
+     */
+    public void assignRolesToUser(Long userId, List<Long> roleIds) {
+        log.info("Assigning roles {} to user id: {}", roleIds, userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        Set<Role> roles = roleIds.stream()
+                .map(roleId -> roleRepository.findById(roleId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + roleId)))
+                .collect(Collectors.toSet());
+        
+        user.setRoles(roles);
+        userRepository.save(user);
+        
+        log.info("Successfully assigned {} roles to user id: {}", roles.size(), userId);
+    }
+
+    /**
+     * Add role to user
+     */
+    public void addRoleToUser(Long userId, Long roleId) {
+        log.info("Adding role {} to user id: {}", roleId, userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + roleId));
+        
+        user.getRoles().add(role);
+        userRepository.save(user);
+        
+        log.info("Successfully added role {} to user id: {}", roleId, userId);
+    }
+
+    /**
+     * Remove role from user
+     */
+    public void removeRoleFromUser(Long userId, Long roleId) {
+        log.info("Removing role {} from user id: {}", roleId, userId);
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + roleId));
+        
+        user.getRoles().remove(role);
+        userRepository.save(user);
+        
+        log.info("Successfully removed role {} from user id: {}", roleId, userId);
     }
 }

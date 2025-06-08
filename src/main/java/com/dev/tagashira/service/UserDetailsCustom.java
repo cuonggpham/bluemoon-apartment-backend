@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.stream.Collectors;
 
 
 @Component("userDetailsService")
@@ -33,10 +33,16 @@ public class UserDetailsCustom implements UserDetailsService {
                 throw new RuntimeException(e);
             }
         }
+        
+        // Convert roles to authorities
+        var authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toList());
+        
         return new User(
                 user.getEmail(),
                 user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))); //hash code authority
+                authorities);
     }
 }
 

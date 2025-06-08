@@ -59,7 +59,7 @@ public class JwtConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         grantedAuthoritiesConverter.setAuthorityPrefix("");
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("permission"); //This sets the claim name from which the authorities will be extracted. In this case, it's using the "permission" claim from the JWT. This means that the authorities (roles/permissions) for the user will be based on the "department" claim in the JWT.
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
