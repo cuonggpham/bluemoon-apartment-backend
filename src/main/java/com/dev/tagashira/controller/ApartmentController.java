@@ -21,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,8 +37,15 @@ public class ApartmentController {
     @PostMapping
     @Operation(summary = "Create apartment", description = "Create a new apartment")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApartmentResponse> createOne(@Valid @RequestBody ApartmentCreateRequest request) {
+    public ResponseEntity<ApartmentResponse> createOne(@Valid @RequestBody ApartmentCreateRequest request, Authentication authentication) {
         log.info("POST /api/v1/apartments - Creating new apartment");
+        log.info("Current user: {}", authentication.getName());
+        log.info("Current authorities: {}", authentication.getAuthorities());
+        log.info("Authentication details: {}", authentication.getDetails());
+        log.info("Request data: addressNumber={}, area={}, status={}, ownerId={}, ownerPhone={}", 
+                request.getAddressNumber(), request.getArea(), request.getStatus(), 
+                request.getOwnerId(), request.getOwnerPhone());
+        
         ApartmentResponse apartment = apartmentService.create(request);
         return ResponseEntity.status(HttpStatus.OK).body(apartment);
     }    

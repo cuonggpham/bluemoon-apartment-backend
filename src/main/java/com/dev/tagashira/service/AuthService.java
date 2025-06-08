@@ -19,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -39,6 +40,7 @@ import java.util.Optional;
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     String googleClientId;
@@ -72,12 +74,16 @@ public class AuthService {
 
     // get user info
     public ResLoginDTO getLogin(UserLoginDTO loginDto) {
+        log.info("Login attempt for user: {}", loginDto.getUsername());
+        
         // Put input including username/password into Security
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginDto.getUsername(), loginDto.getPassword());
 
         // authenticate user => need to define loadUserByUsername method
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        log.info("Authentication successful for user: {}", loginDto.getUsername());
+        log.info("Authentication authorities: {}", authentication.getAuthorities());
 
         // Put information into security context if user logins successfully. Spring has already done it, but we can config in here.
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -87,6 +93,8 @@ public class AuthService {
         // return user's info
         User currentUserDB = this.userService.getUserByUsername(loginDto.getUsername());
         if (currentUserDB != null) {
+            log.info("Found user in database: {} with roles: {}", currentUserDB.getEmail(), 
+                currentUserDB.getRoles().stream().map(role -> role.getName()).toList());
             ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                     currentUserDB.getId(),
                     currentUserDB.getEmail(),
@@ -97,6 +105,7 @@ public class AuthService {
         // create a token
         String access_token = this.securityUtil.createAccessToken(authentication.getName(), res.getUser(), authentication.getAuthorities());
         res.setAccessToken(access_token);
+        log.info("Access token created successfully for user: {}", loginDto.getUsername());
 
         return res;
     }

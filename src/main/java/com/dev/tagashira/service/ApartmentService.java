@@ -39,7 +39,10 @@ public class ApartmentService {
       
     @Transactional
     public ApartmentResponse create(ApartmentCreateRequest request) {
+        log.info("ApartmentService.create() called with request: {}", request);
+        
         if (this.apartmentRepository.findById(request.getAddressNumber()).isPresent()) {
+            log.error("Apartment with addressNumber {} already exists", request.getAddressNumber());
             throw new RuntimeException("Apartment with id = " + request.getAddressNumber() + " already exists");
         }
         
@@ -48,10 +51,17 @@ public class ApartmentService {
         
         // Handle optional owner
         if (request.getOwnerId() != null) {
+            log.info("Fetching owner with id: {}", request.getOwnerId());
             owner = residentService.fetchResidentEntityById(request.getOwnerId());
             residents.add(owner);
+            log.info("Owner found: {}", owner.getName());
+        } else {
+            log.info("No owner specified for apartment");
         }
 
+        log.info("Building apartment with: addressNumber={}, area={}, status={}, ownerPhone={}", 
+                request.getAddressNumber(), request.getArea(), request.getStatus(), request.getOwnerPhone());
+        
         Apartment apartment = Apartment.builder()
                 .addressNumber(request.getAddressNumber())
                 .area(request.getArea())
@@ -61,15 +71,21 @@ public class ApartmentService {
                 .residentList(residents)
                 .build();
 
+        log.info("Attempting to save apartment to database...");
         Apartment saved = apartmentRepository.save(apartment);
+        log.info("Apartment saved successfully with id: {}", saved.getAddressNumber());
 
         // Update the many-to-many relationship from the resident side
         residents.forEach(resident -> {
+            log.info("Updating resident {} with apartment reference", resident.getId());
             resident.getApartments().add(saved);
             residentRepository.save(resident);
         });
 
-        return apartmentConverter.toResponse(saved);
+        log.info("Converting apartment to response format");
+        ApartmentResponse response = apartmentConverter.toResponse(saved);
+        log.info("ApartmentService.create() completed successfully");
+        return response;
     }    
     
     public PaginatedResponse<ApartmentResponse> getAll(Specification<Apartment> spec, Pageable pageable){

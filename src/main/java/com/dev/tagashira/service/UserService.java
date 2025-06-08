@@ -66,12 +66,23 @@ public class UserService {
         if (user.getIsActive() == 0) {
             throw new UserInfoException("User with id " + id + " is not active");
         }
+        log.info("User with id {} has roles: {}", id, 
+            user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList()));
         return user;
     }
 
     //Logic get user by email
     public User getUserByUsername(String username) {
-        return this.userRepository.findByEmail(username);
+        User user = this.userRepository.findByEmail(username);
+        if (user != null) {
+            log.info("User {} has roles: {}", username, 
+                user.getRoles().stream()
+                    .map(Role::getName)
+                    .collect(Collectors.toList()));
+        }
+        return user;
     }
 
     //Logic delete user by id

@@ -13,6 +13,7 @@ import com.dev.tagashira.exception.UserInfoException;
 import com.dev.tagashira.repository.UserRepository;
 import com.nimbusds.jose.util.Base64;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -32,6 +33,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 
 @Service
+@Slf4j
 public class SecurityUtil {
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
@@ -68,6 +70,10 @@ public class SecurityUtil {
         List<String> roles = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
+        
+        log.info("Creating access token for user: {}", email);
+        log.info("User authorities: {}", authorities);
+        log.info("Extracted roles for JWT: {}", roles);
 
         // @formatter:off
         JwtClaimsSet claims = JwtClaimsSet.builder()
