@@ -64,7 +64,9 @@ public class Resident {
     public void beforePersist() {
         isActive = 1;
         statusDate = LocalDate.now();
-    }    @PostLoad
+    }
+
+    @PostLoad
     public void onLoad() {
         this.previousStatus = this.status;
         // For backward compatibility, get first apartment if exists

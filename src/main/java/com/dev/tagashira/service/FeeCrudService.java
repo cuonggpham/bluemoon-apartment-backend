@@ -9,6 +9,7 @@ import com.dev.tagashira.entity.Apartment;
 import com.dev.tagashira.entity.Fee;
 import com.dev.tagashira.exception.FeeNotFoundException;
 import com.dev.tagashira.exception.ApartmentNotFoundException;
+import com.dev.tagashira.exception.FeeUpdateRestrictedException;
 import com.dev.tagashira.repository.FeeRepository;
 import com.dev.tagashira.converter.FeeConverter;
 import com.dev.tagashira.service.factory.FeeBuilderFactory;
@@ -116,6 +117,14 @@ public class FeeCrudService {
         Fee existing = feeRepository.findById(updatePayload.getId())
                 .orElseThrow(() -> new FeeNotFoundException("Fee " + updatePayload.getId() + " not found"));
 
+        // Check if fee has payment record - if yes, prevent update
+        if (existing.isPaid()) {
+            throw new FeeUpdateRestrictedException(
+                "Cannot update fee '" + existing.getName() + "' (ID: " + existing.getId() + 
+                ") because it has already been paid. Fee updates are not allowed once payment has been recorded."
+            );
+        }
+
         Apartment apartmentToUpdate = existing.getApartment();
         if (updatePayload.getApartmentId() != null && 
             !updatePayload.getApartmentId().equals(existing.getApartmentNumber())) {
@@ -144,6 +153,15 @@ public class FeeCrudService {
     public ApiResponse<String> delete(Long id) {
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new FeeNotFoundException("Fee " + id + " not found"));
+        
+        // Check if fee has payment record - if yes, prevent deletion
+        if (fee.isPaid()) {
+            throw new FeeUpdateRestrictedException(
+                "Cannot delete fee '" + fee.getName() + "' (ID: " + fee.getId() + 
+                ") because it has already been paid. Fee deletion is not allowed once payment has been recorded."
+            );
+        }
+        
         feeRepository.delete(fee);
 
         ApiResponse<String> res = new ApiResponse<>();
@@ -156,6 +174,14 @@ public class FeeCrudService {
     public void deactivate(Long id) {
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new FeeNotFoundException("Fee " + id + " not found"));
+
+        // Check if fee has payment record - if yes, prevent deactivation
+        if (fee.isPaid()) {
+            throw new FeeUpdateRestrictedException(
+                "Cannot deactivate fee '" + fee.getName() + "' (ID: " + fee.getId() + 
+                ") because it has already been paid. Fee deactivation is not allowed once payment has been recorded."
+            );
+        }
 
         Fee deactivated = feeBuilderFactory.from(fee)
                 .isActive(false)

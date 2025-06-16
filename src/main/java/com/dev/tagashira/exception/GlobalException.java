@@ -46,6 +46,17 @@ public class GlobalException {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
     
+    // Handle fee update restriction exceptions
+    @ExceptionHandler(value = {
+            FeeUpdateRestrictedException.class
+    })
+    public ResponseEntity<ApiResponse<Object>> handleFeeUpdateRestrictedException(Exception ex) {
+        ApiResponse<Object> res = new ApiResponse<Object>();
+        res.setCode(HttpStatus.CONFLICT.value()); // 409
+        res.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(res);
+    }
+    
     // Handle file processing exceptions
     @ExceptionHandler(value = {
             FileProcessingException.class

@@ -104,10 +104,21 @@ public class UserService {
     public User updateUser(User reqUser) throws UserInfoException {
         User currentUser = this.fetchUserById(reqUser.getId());
         if (currentUser != null) {
+            if (reqUser.getEmail() != null && !reqUser.getEmail().isEmpty()) {
+                if (isEmailExist(reqUser.getEmail()) && !currentUser.getEmail().equals(reqUser.getEmail())) {
+                    throw new UserInfoException("Email " + reqUser.getEmail() + " already exists");
+                }
+            }
             currentUser.setEmail(reqUser.getEmail());
-            currentUser.setName(reqUser.getName());
-            String hashPassword = this.passwordEncoder.encode(reqUser.getPassword());
-            currentUser.setPassword(hashPassword);
+
+            if (reqUser.getName() != null){
+                currentUser.setName(reqUser.getName());
+            }
+
+            if (reqUser.getPassword() != null){
+                String hashPassword = this.passwordEncoder.encode(reqUser.getPassword());
+                currentUser.setPassword(hashPassword);
+            }
             // update
             currentUser = this.userRepository.save(currentUser);
         }
